@@ -1,0 +1,46 @@
+# configs/srl_config.yaml
+# Safety Refinement Layer configuration
+
+srl:
+  enabled: true
+
+  # Thresholds — all are implementation choices (tunable)
+  uncertainty_threshold: 0.75     # Max allowed perception uncertainty
+  severity_threshold: 0.80        # Max allowed pothole severity
+  lateral_deviation_threshold: 0.5  # Max lateral deviation in metres
+  collision_risk_threshold: 0.5   # Min predicted collision probability to override
+  action_consistency_window: 5    # Steps of history to check for oscillation
+  oscillation_count_threshold: 3  # If action flips >N times in window → override
+
+  # Fallback actions (applied when RL action is overridden)
+  fallback:
+    uncertainty_override: 0       # 0 = Maintain Lane (safest under uncertainty)
+    severity_override: 0          # Maintain lane when too severe to safely maneuver
+    collision_override: 0         # Maintain Lane / Emergency slow
+    oscillation_override: 0       # Centre lane on oscillation detection
+
+  # Emergency braking trigger
+  emergency_brake:
+    enabled: true
+    min_depth_threshold: 0.5      # metres — obstacle too close
+    severity_threshold: 0.95      # Near-critical pothole severity
+
+# Collision checker
+collision_checker:
+  # Vehicle model (simplified kinematic bicycle model — implementation choice)
+  vehicle:
+    wheelbase: 2.7                # metres
+    width: 1.8                    # metres
+    length: 4.5                   # metres
+
+  # Trajectory prediction horizon
+  horizon_steps: 5
+  step_size: 0.5                  # metres per step
+
+  # Action → lateral offset mapping (implementation choice — tunable)
+  action_lateral_offsets:
+    0: 0.0      # Maintain Lane
+    1: -0.5     # Shift Left (metres)
+    2: 0.5      # Shift Right (metres)
+
+  lane_half_width: 1.75           # metres from lane centre to boundary

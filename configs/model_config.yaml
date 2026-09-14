@@ -1,0 +1,48 @@
+# configs/model_config.yaml
+# TransUNet architecture configuration
+
+transunet:
+  image_size: 512          # Input resolution (H = W)
+  in_channels: 3           # RGB
+  base_channels: 64        # CNN backbone base feature channels
+
+  # CNN Backbone (ResNet-style feature extractor)
+  backbone:
+    type: "resnet50"       # Options: resnet50, resnet34
+    pretrained: true
+    freeze_backbone: false
+
+  # Transformer Encoder
+  transformer:
+    hidden_size: 768       # Token embedding dimension
+    num_layers: 12         # Number of transformer blocks
+    num_heads: 12          # Multi-head attention heads
+    mlp_ratio: 4.0         # FFN expansion factor
+    dropout: 0.1
+    attention_dropout: 0.1
+    patch_size: 16         # Patch size for tokenisation
+    num_patches: 256       # (512/32)^2 after 5x down-sampling → adjusted at runtime
+
+  # U-Net Decoder
+  decoder:
+    skip_channels: [512, 256, 128, 64]   # Skip connection channels
+    up_channels:   [512, 256, 128, 64]   # Decoder output channels per level
+
+  # Segmentation Head
+  segmentation_head:
+    num_classes: 1         # Binary: pothole vs background
+    final_activation: "sigmoid"
+
+  # Depth Head
+  depth_head:
+    out_channels: 1
+    min_depth: 0.1
+    max_depth: 80.0        # metres
+    activation: "sigmoid"  # Scaled by max_depth in forward pass
+
+  # Uncertainty Head
+  uncertainty_head:
+    out_channels: 1
+    method: "mc_dropout"   # Options: mc_dropout, evidential
+    mc_samples: 10         # Number of MC-Dropout forward passes
+    dropout_rate: 0.1

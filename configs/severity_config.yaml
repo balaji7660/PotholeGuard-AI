@@ -1,0 +1,32 @@
+# configs/severity_config.yaml
+# Pothole severity scoring configuration
+#
+# NOTE: The severity function below is an IMPLEMENTATION CHOICE.
+# The research paper describes severity as a function of area, depth, and
+# lane-relative displacement, but does NOT specify exact coefficients.
+# All weights below are configurable and must be tuned experimentally.
+
+severity:
+  # Severity = w_area * f_area + w_depth * f_depth + w_disp * f_disp + w_minD * f_minD
+  # Each component is normalised to [0, 1] before weighting.
+  # Implementation choice — NOT from paper.
+  area_weight: 0.30
+  avg_depth_weight: 0.30
+  min_depth_weight: 0.20
+  lane_displacement_weight: 0.20
+
+  # Normalisation reference values (used to scale components to [0,1])
+  # Implementation choice — tune for your dataset
+  max_area_pixels: 50000         # Pixel area considered "maximum severity"
+  max_depth_metres: 0.5          # Depth in metres considered very severe
+  max_lane_displacement: 1.75    # Metres (half lane width) = full displacement
+
+  # Final severity clipped to [0, 1]
+  clip_min: 0.0
+  clip_max: 1.0
+
+  # Severity thresholds for labels (optional — used in visualisation)
+  thresholds:
+    low: 0.33
+    medium: 0.66
+    high: 1.00

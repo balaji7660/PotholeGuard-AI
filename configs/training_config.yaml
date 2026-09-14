@@ -1,0 +1,64 @@
+# configs/training_config.yaml
+# Perception model training configuration
+
+training:
+  seed: 42
+  device: "auto"           # auto | cpu | cuda | cuda:0
+  num_workers: 4
+  pin_memory: true
+
+  epochs: 100
+  batch_size: 8
+  val_batch_size: 4
+
+  # Optimiser
+  optimizer:
+    type: "adamw"          # adam | adamw | sgd
+    lr: 1.0e-4
+    weight_decay: 1.0e-4
+    betas: [0.9, 0.999]
+
+  # LR Scheduler
+  scheduler:
+    type: "cosine"         # cosine | step | plateau
+    warmup_epochs: 5
+    min_lr: 1.0e-6
+    t_max: 100             # for cosine
+
+  # Gradient clipping
+  grad_clip: 1.0
+
+  # Checkpointing
+  checkpoint_dir: "checkpoints/perception"
+  save_every: 5            # Save every N epochs
+  keep_best: true          # Keep best val-Dice checkpoint
+
+  # Early stopping
+  early_stopping:
+    enabled: true
+    patience: 15
+    metric: "val_dice"
+    mode: "max"
+
+  # Mixed precision
+  amp: true
+
+loss:
+  # Multi-task loss weights
+  # Implementation choice — experimentally tunable
+  segmentation_weight: 1.0
+  depth_weight: 0.5
+  uncertainty_weight: 0.1
+
+  # Segmentation: combined BCE + Dice
+  seg_bce_weight: 0.5
+  seg_dice_weight: 0.5
+
+  # Depth: SILog loss (scale-invariant log)
+  depth_loss_type: "silog"   # silog | l1 | smooth_l1
+  silog_lambda: 0.85         # SILog variance term weight
+
+logging:
+  log_dir: "logs/perception"
+  tensorboard: true
+  log_every: 10             # Steps between console logs
