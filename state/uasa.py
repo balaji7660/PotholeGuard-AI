@@ -61,7 +61,7 @@ does not enumerate each one explicitly.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Any
 
 import cv2
 import numpy as np
@@ -108,14 +108,23 @@ class UASAStateGenerator:
 
     def __init__(
         self,
-        severity_cfg: DictConfig,
-        rl_cfg: DictConfig,
+        severity_cfg: Optional[Any] = None,
+        rl_cfg: Optional[Any] = None,
         image_size: Tuple[int, int] = (512, 512),
     ) -> None:
         self.H, self.W = image_size
+        import os
+        from omegaconf import OmegaConf
+        if severity_cfg is None:
+            cfg_p = "configs/severity_config.yaml"
+            severity_cfg = OmegaConf.load(cfg_p) if os.path.exists(cfg_p) else OmegaConf.create({"weights": {"area": 0.3, "depth": 0.4, "uncertainty": 0.2, "aspect_ratio": 0.1}, "thresholds": {"minor": 0.3, "moderate": 0.6, "severe": 0.8}})
         self.severity_scorer = PotholeSeverityScorer(severity_cfg)
 
-        alpha = float(rl_cfg.environment.action_smoothing.ema_alpha)
+        if rl_cfg is None:
+            rl_p = "configs/rl_config.yaml"
+            rl_cfg = OmegaConf.load(rl_p) if os.path.exists(rl_p) else OmegaConf.create({"environment": {"action_smoothing": {"ema_alpha": 0.7}}})
+
+        alpha = float(rl_cfg.environment.action_smoothing.ema_alpha) if hasattr(rl_cfg, "environment") else 0.7
         self.smoother = EMATemporalSmoother(STATE_DIM, alpha=alpha)
 
         # EMA sub-smoothers for temporal extra features

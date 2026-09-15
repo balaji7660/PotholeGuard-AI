@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PotholeGuard-AI | Two-Wheeler Rider Safety HUD</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#00f0ff">
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="logo-badge">
+      <div class="logo-icon">🛡️</div>
+      <div class="logo-text">
+        <h1>PotholeGuard-AI</h1>
+        <span>Rider Safety HUD</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="btn-mute" class="btn-icon">🔊 Audio ON</button>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="tab-hud">Live HUD</button>
+    <button class="tab-btn" data-tab="tab-history">Detection Logs</button>
+    <button class="tab-btn" data-tab="tab-video">Video Test</button>
+    <button class="tab-btn" data-tab="tab-calibrate">Calibration</button>
+    <button class="tab-btn" data-tab="tab-stats">Researcher Stats</button>
+  </div>
+
+  <main>
+    <!-- TAB 1: LIVE HUD -->
+    <section id="tab-hud" class="tab-content active">
+      <div class="hud-container">
+        <video id="camera-feed" playsinline muted autoplay></video>
+        <canvas id="hud-overlay"></canvas>
+        <div class="hud-top-bar">
+          <div class="hud-pill"><div class="status-dot" id="status-indicator"></div><span id="system-status">STANDBY</span></div>
+          <div class="hud-pill"><span id="model-mode-badge">REAL MODEL</span></div>
+          <div class="hud-pill">FPS: <span id="fps-val">0.0</span></div>
+        </div>
+      </div>
+
+      <!-- Main Risk Status Card -->
+      <div id="risk-banner" class="risk-banner safe">
+        <div class="risk-info">
+          <h2 id="risk-title">ROAD CLEAR</h2>
+          <p id="recommendation-text">MAINTAIN COURSE</p>
+        </div>
+        <div class="risk-badge-icon" id="risk-icon" style="font-size: 28px;">🟢</div>
+      </div>
+
+      <!-- Explainable AI (XAI) Why Card -->
+      <div id="reasons-container" class="reasons-card" style="display: none;">
+        <strong>🔍 Hazard Assessment Rationale:</strong>
+        <ul id="reasons-list"></ul>
+      </div>
+
+      <!-- Live Telemetry Badges (6 Badges) -->
+      <div class="telemetry-grid">
+        <div class="metric-card">
+          <span>Rel Size</span>
+          <strong id="m-size">NONE</strong>
+        </div>
+        <div class="metric-card">
+          <span>Rel Depth</span>
+          <strong id="m-depth">NONE</strong>
+        </div>
+        <div class="metric-card">
+          <span>Rider Path</span>
+          <strong id="m-path">CLEAR</strong>
+        </div>
+        <div class="metric-card">
+          <span>Approach</span>
+          <strong id="m-approach">FAR</strong>
+        </div>
+        <div class="metric-card">
+          <span>Confidence</span>
+          <strong id="m-conf">--%</strong>
+        </div>
+        <div class="metric-card">
+          <span>Image Quality</span>
+          <strong id="m-quality">HIGH</strong>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls-bar">
+        <button id="btn-start" class="btn-primary">START LIVE HUD</button>
+        <button id="btn-stop" class="btn-secondary" style="display: none;">STOP</button>
+        <button id="btn-switch-cam" class="btn-secondary">🔄 Flip Cam</button>
+      </div>
+
+      <!-- Latency Bar -->
+      <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 10px; font-family: monospace;">
+        <span>Model Latency: <b id="lat-model" style="color: var(--neon-cyan);">0 ms</b></span>
+        <span>Network Latency: <b id="lat-net" style="color: var(--neon-cyan);">0 ms</b></span>
+      </div>
+
+      <!-- Safety Disclaimer -->
+      <div class="disclaimer-card">
+        <strong>⚠️ SAFETY NOTICE:</strong> This system is an experimental rider-assistance aid. It does <b>NOT</b> control the motorcycle throttle, brakes, or steering. The rider remains 100% responsible for vehicle safety and situational awareness.
+      </div>
+    </section>
+
+    <!-- TAB 2: HISTORY & LOGS -->
+    <section id="tab-history" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3>Pothole Detection Log</h3>
+        <button id="btn-export-csv" class="btn-icon">📥 Export CSV</button>
+      </div>
+      <div class="table-container">
+        <table id="history-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Track ID</th>
+              <th>Risk</th>
+              <th>Size</th>
+              <th>Depth</th>
+              <th>Approach</th>
+              <th>Confidence</th>
+              <th>Uncertainty</th>
+              <th>Path</th>
+              <th>Recommendation</th>
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <tr><td colspan="10" style="text-align: center; color: var(--text-muted);">No detections logged yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 3: VIDEO TEST MODE -->
+    <section id="tab-video" class="tab-content">
+      <h3>Offline Video & Image Research Testing</h3>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Upload recorded road footage (MP4/WebM) or road images (JPG/PNG) to execute identical TransUNet perception, tracking, risk, and safety evaluation.</p>
+      
+      <div style="margin-bottom: 16px;">
+        <input type="file" id="file-uploader" accept="video/*,image/*" class="form-control">
+      </div>
+      <div id="video-preview-container" style="display: none; position: relative;">
+        <video id="uploaded-video" controls style="width: 100%; border-radius: 12px;"></video>
+      </div>
+
+      <!-- Visual Image Test Result Canvas & Overlay -->
+      <div id="image-preview-container" style="display: none; margin-top: 14px;">
+        <div style="position: relative; width: 100%; max-height: 480px; overflow: hidden; border-radius: 12px; border: 1px solid var(--panel-border); background: #000;">
+          <canvas id="test-image-canvas" style="width: 100%; height: auto; display: block;"></canvas>
+        </div>
+
+        <!-- Result Banner -->
+        <div id="test-risk-banner" class="risk-banner safe" style="margin-top: 12px;">
+          <div class="risk-info">
+            <h2 id="test-risk-title">ROAD CLEAR</h2>
+            <p id="test-recommendation-text">MAINTAIN COURSE</p>
+          </div>
+          <div class="risk-badge-icon" id="test-risk-icon" style="font-size: 28px;">🟢</div>
+        </div>
+
+        <!-- Explainable Rationale -->
+        <div id="test-reasons-container" class="reasons-card" style="margin-top: 10px;">
+          <strong>🔍 Hazard Assessment Rationale:</strong>
+          <ul id="test-reasons-list"></ul>
+        </div>
+
+        <!-- Visual Metrics Badges -->
+        <div class="telemetry-grid" style="margin-top: 10px;">
+          <div class="metric-card">
+            <span>Size</span>
+            <strong id="test-m-size">NONE</strong>
+          </div>
+          <div class="metric-card">
+            <span>Rel Depth</span>
+            <strong id="test-m-depth">NONE</strong>
+          </div>
+          <div class="metric-card">
+            <span>Rider Path</span>
+            <strong id="test-m-path">CLEAR</strong>
+          </div>
+          <div class="metric-card">
+            <span>Approach</span>
+            <strong id="test-m-approach">FAR</strong>
+          </div>
+        </div>
+
+        <!-- Collapsible Raw JSON -->
+        <details style="margin-top: 12px; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 8px; border: 1px solid var(--panel-border);">
+          <summary style="cursor: pointer; color: var(--neon-cyan); font-size: 12px; font-weight: 600;">View Raw JSON Telemetry</summary>
+          <pre id="image-result-json" style="font-size: 11px; margin-top: 8px; max-height: 250px; overflow: auto; color: #94a3b8;"></pre>
+        </details>
+      </div>
+    </section>
+
+    <!-- TAB 4: CALIBRATION -->
+    <section id="tab-calibrate" class="tab-content">
+      <h3>Camera Mounting & Geometry Calibration</h3>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Specify smartphone mount parameters to enable physical dimension estimation (cm/m) alongside relative classifications.</p>
+      
+      <form id="calib-form">
+        <div class="form-group">
+          <label>Mount Height from Road (meters)</label>
+          <input type="number" id="c-height" step="0.05" value="1.0" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Camera Downward Pitch Angle (degrees)</label>
+          <input type="number" id="c-pitch" step="1.0" value="15" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Known Reference Distance (meters)</label>
+          <input type="number" id="c-dist" step="0.5" value="5.0" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Pixel-to-Centimeter Scale Ratio</label>
+          <input type="number" id="c-ratio" step="0.01" value="0.15" class="form-control">
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%;">Save & Apply Calibration</button>
+      </form>
+    </section>
+
+    <!-- TAB 5: RESEARCHER STATS -->
+    <section id="tab-stats" class="tab-content">
+      <h3>System Performance & Metrics Dashboard</h3>
+      <div class="telemetry-grid" style="margin-top: 14px;">
+        <div class="metric-card">
+          <span>Total Logs</span>
+          <strong id="st-total">0</strong>
+        </div>
+        <div class="metric-card">
+          <span>Unique Potholes</span>
+          <strong id="st-unique">0</strong>
+        </div>
+        <div class="metric-card">
+          <span>Danger Alerts</span>
+          <strong id="st-danger">0</strong>
+        </div>
+        <div class="metric-card">
+          <span>Avg Latency</span>
+          <strong id="st-lat">0 ms</strong>
+        </div>
+      </div>
+
+      <!-- Real-Time Risk Timeline Graph -->
+      <div style="margin-top: 18px; background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px;">
+        <h4>Live Hazard Risk vs Time (Active Tracks)</h4>
+        <canvas id="risk-timeline-canvas" width="600" height="180" style="width: 100%; height: 180px; margin-top: 10px; background: rgba(0,0,0,0.3); border-radius: 8px;"></canvas>
+      </div>
+
+      <div style="margin-top: 18px; background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px;">
+        <h4>Source Research Baseline Comparison</h4>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Reported paper baseline: 5-Fold Dice: 0.8393 ± 0.0148 | IoU: 0.7344 | Depth RMSE: 4.157 | SRL Intervention: 55.9%</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

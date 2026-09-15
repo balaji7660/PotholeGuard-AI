@@ -1,0 +1,21 @@
+{
+  "name": "potholeguard-ai",
+  "version": "1.0.0",
+  "description": "Real-Time Smartphone-Based Pothole Detection and Rider Safety Alert System",
+  "scripts": {
+    "start": "python scripts/run_backend.py",
+    "mobile": "python scripts/run_mobile_hud.py",
+    "test": "pytest tests/",
+    "eval": "python scripts/evaluate_all.py"
+  },
+  "keywords": [
+    "pothole-detection",
+    "computer-vision",
+    "transunet",
+    "rider-safety",
+    "pwa",
+    "fastapi"
+  ],
+  "author": "PotholeGuard-AI Research Team",
+  "license": "MIT"
+}

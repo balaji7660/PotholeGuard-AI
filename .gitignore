@@ -35,3 +35,7 @@ Thumbs.db
 *.key
 *.crt
 data/certs/
+
+# Database files
+*.db
+*.sqlite3

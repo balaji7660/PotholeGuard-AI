@@ -1,0 +1,15 @@
+{
+  "dataset_root": "data",
+  "pothole600_found": false,
+  "potholergbd_found": false,
+  "total_images": 0,
+  "annotated_masks": 0,
+  "ground_truth_depth_images": 0,
+  "pseudo_depth_images": 0,
+  "splits": {
+    "train": 0,
+    "val": 0,
+    "test": 0
+  },
+  "status": "NO_LOCAL_DATASET_FOUND"
+}

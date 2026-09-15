@@ -11,7 +11,7 @@ Weights are configurable and can be replaced with performance-based adaptive wei
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 import numpy as np
 from omegaconf import DictConfig
@@ -35,22 +35,25 @@ class SoftVotingEnsemble:
         rl_config.yaml → ensemble section.
     """
 
-    def __init__(self, agents: Dict[str, object], cfg: DictConfig) -> None:
-        self.agents = agents
-        self.cfg    = cfg.ensemble
+    def __init__(self, agents: Optional[Dict[str, object]] = None, cfg: Optional[Any] = None) -> None:
+        self.agents = agents or {}
+        if cfg is not None and hasattr(cfg, "ensemble"):
+            self.cfg = cfg.ensemble
+            w_cfg = getattr(self.cfg, "weights", {})
+            self._weights: Dict[str, float] = {
+                name: float(w_cfg.get(name, 1.0 / max(1, len(self.agents))))
+                for name in self.agents
+            } if self.agents else {"ppo": 0.25, "a2c": 0.25, "trpo": 0.25, "recurrent_ppo": 0.25}
+            self.adaptive = bool(getattr(self.cfg, "adaptive_weights", False))
+        else:
+            self.cfg = None
+            self._weights = {
+                name: 1.0 / max(1, len(self.agents)) for name in self.agents
+            } if self.agents else {"ppo": 0.25, "a2c": 0.25, "trpo": 0.25, "recurrent_ppo": 0.25}
+            self.adaptive = False
 
-        # Load configurable weights
-        w_cfg = self.cfg.weights
-        self._weights: Dict[str, float] = {
-            name: float(w_cfg.get(name, 1.0 / len(agents)))
-            for name in agents
-        }
         self._normalise_weights()
-        self.adaptive = bool(self.cfg.adaptive_weights)
-
-        # Performance tracking for adaptive weights
-        self._agent_rewards: Dict[str, List[float]] = {n: [] for n in agents}
-
+        self._agent_rewards: Dict[str, List[float]] = {n: [] for n in self.agents}
         log.info(f"Ensemble weights: {self._weights}")
 
     # ------------------------------------------------------------------

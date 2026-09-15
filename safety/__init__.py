@@ -1,8 +1,8 @@
 """
-safety/__init__.py
+Safety package for PotholeGuard-AI.
 """
-from safety.srl import SafetyRefinementLayer
-from safety.collision_checker import CollisionChecker
-from safety.trajectory import TrajectoryPredictor
+from .safety_refinement import SafetyRefinementLayer
+from .collision_checker import CollisionChecker
+from .trajectory import TrajectoryPredictor
 
 __all__ = ["SafetyRefinementLayer", "CollisionChecker", "TrajectoryPredictor"]
