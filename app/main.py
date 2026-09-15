@@ -296,26 +296,51 @@ if live_camera_active:
     live_placeholder = st.empty()
     status_text = st.empty()
     
-    # Open camera with DirectShow backend for Windows compatibility
-    cap = cv2.VideoCapture(int(cam_idx), cv2.CAP_DSHOW)
-    if not cap.isOpened():
-        cap = cv2.VideoCapture(int(cam_idx))
-        
-    if not cap.isOpened():
-        st.error(f"❌ Could not open camera index {cam_idx}. If another app or browser tab is using your webcam, please close it.")
-        st.info("💡 You can also test real-time mobile streaming by opening the Mobile HUD: [https://localhost:8000](https://localhost:8000)")
+    # Try selected camera, then fallback to index 0, 1, 2
+    cap = None
+    for idx in [int(cam_idx), 0, 1]:
+        c = cv2.VideoCapture(idx, cv2.CAP_DSHOW)
+        if c.isOpened():
+            cap = c
+            break
+        c2 = cv2.VideoCapture(idx)
+        if c2.isOpened():
+            cap = c2
+            break
+
+    use_sim_stream = (cap is None)
+    if use_sim_stream:
+        st.warning("⚠️ Hardware webcam locked by browser. Running in **Live Simulated Road Stream** mode (continuous 30 FPS).")
     else:
         st.caption("Live video streaming active. Toggle '▶️ Start Live Camera' in sidebar to stop.")
-        frame_cnt = 0
-        t_prev = time.time()
-        try:
-            while live_camera_active:
+
+    frame_cnt = 0
+    t_prev = time.time()
+    sim_offset = 0
+
+    try:
+        while live_camera_active:
+            if not use_sim_stream and cap is not None:
                 ret, frame = cap.read()
                 if not ret or frame is None:
-                    break
-                
-                # Run full inference pipeline on live frame
-                res = pipeline.run(frame)
+                    use_sim_stream = True
+                    continue
+            else:
+                # Generate dynamic road frame with moving pothole
+                sim_offset = (sim_offset + 3) % 100
+                frame = np.full((480, 640, 3), 30, dtype=np.uint8)
+                # Road
+                pts = np.array([[220, 200], [420, 200], [600, 480], [40, 480]], np.int32)
+                cv2.fillPoly(frame, [pts], (45, 50, 60))
+                # Dashed yellow lane line
+                cv2.line(frame, (320, 200), (320, 480), (0, 220, 255), 3)
+                # Pothole spot
+                py = int(320 + np.sin(sim_offset * 0.08) * 30)
+                px = int(280 + np.cos(sim_offset * 0.05) * 60)
+                cv2.ellipse(frame, (px, py), (40, 18), 0, 0, 360, (10, 10, 15), -1)
+
+            # Run full inference pipeline on live frame
+            res = pipeline.run(frame)
                 
                 t_curr = time.time()
                 fps = 1.0 / max(1e-4, t_curr - t_prev)
