@@ -236,7 +236,9 @@ class PotholeDetectionApp:
         threading.Thread(target=self._live_camera_loop, daemon=True).start()
 
     def _live_camera_loop(self) -> None:
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        if not cap.isOpened():
+            cap = cv2.VideoCapture(0)
         if not cap.isOpened():
             messagebox.showerror("Camera Error", "Could not access webcam device index 0.")
             self.status_var.set("Status: Camera failed to open.")

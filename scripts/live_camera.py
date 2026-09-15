@@ -100,7 +100,9 @@ def main():
     print("=" * 60 + "\n")
 
     pipeline = InferencePipeline(config_dir=str(ROOT / "configs"))
-    cap = cv2.VideoCapture(args.camera)
+    cap = cv2.VideoCapture(args.camera, cv2.CAP_DSHOW)
+    if not cap.isOpened():
+        cap = cv2.VideoCapture(args.camera)
 
     if not cap.isOpened():
         print(f"❌ Error: Could not open camera {args.camera}. Please check connection.")

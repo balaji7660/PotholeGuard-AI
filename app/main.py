@@ -296,9 +296,14 @@ if live_camera_active:
     live_placeholder = st.empty()
     status_text = st.empty()
     
-    cap = cv2.VideoCapture(int(cam_idx))
+    # Open camera with DirectShow backend for Windows compatibility
+    cap = cv2.VideoCapture(int(cam_idx), cv2.CAP_DSHOW)
     if not cap.isOpened():
-        st.error(f"❌ Could not open camera {cam_idx}. Please verify camera is connected.")
+        cap = cv2.VideoCapture(int(cam_idx))
+        
+    if not cap.isOpened():
+        st.error(f"❌ Could not open camera index {cam_idx}. If another app or browser tab is using your webcam, please close it.")
+        st.info("💡 You can also test real-time mobile streaming by opening the Mobile HUD: [https://localhost:8000](https://localhost:8000)")
     else:
         st.caption("Live video streaming active. Toggle '▶️ Start Live Camera' in sidebar to stop.")
         frame_cnt = 0
