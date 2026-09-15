@@ -185,15 +185,29 @@ with st.sidebar:
 
     input_mode = st.radio(
         "Input Source",
-        ["📂 Upload Image", "🎬 Upload Video", "🖼️ Demo Images", "📷 Live Camera"],
-        index=2,
+        ["🖼️ Demo Images", "🎥 Continuous Live Camera", "📂 Upload Image", "🎬 Upload Video", "📷 Snapshot Photo"],
+        index=0,
     )
 
     uploaded_file = None
     selected_demo = None
     image_bgr     = None
+    live_camera_active = False
 
-    if input_mode == "📂 Upload Image":
+    if input_mode == "🎥 Continuous Live Camera":
+        st.markdown("### 🎥 Live Continuous Feed")
+        cam_idx = st.number_input("Camera Index", min_value=0, max_value=5, value=0, step=1)
+        live_camera_active = st.toggle("▶️ Start Live Camera", value=False)
+        st.caption("Live frames from your webcam will be processed in real-time continuously.")
+        st.info("💡 For dedicated mobile streaming & audio HUD, you can also open: [Mobile HUD](http://localhost:8000)")
+
+    elif input_mode == "📷 Snapshot Photo":
+        camera_img = st.camera_input("Take a photo of the road / pothole")
+        if camera_img:
+            file_bytes = np.frombuffer(camera_img.read(), np.uint8)
+            image_bgr  = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+
+    elif input_mode == "📂 Upload Image":
         uploaded_file = st.file_uploader("Upload pothole image",
                                           type=["jpg", "jpeg", "png", "bmp"])
         if uploaded_file:
@@ -204,13 +218,6 @@ with st.sidebar:
         st.info("Upload a pothole video — frames are processed sequentially.")
         uploaded_file = st.file_uploader("Upload video", type=["mp4", "avi", "mov"])
         st.caption("Video mode: use Run Full Pipeline below after upload.")
-
-    elif input_mode == "📷 Live Camera":
-        camera_img = st.camera_input("Take a photo of the road / pothole")
-        if camera_img:
-            file_bytes = np.frombuffer(camera_img.read(), np.uint8)
-            image_bgr  = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-        st.info("💡 For continuous real-time video streaming & HUD on mobile, run: `python run_mobile.py`")
 
     else:  # Demo Images
         demo_names = list_demo_images()
@@ -283,8 +290,64 @@ with st.expander("📊 Pipeline Architecture", expanded=False):
             with cols[i]:
                 pass
 
+# ── Live Continuous Camera Mode ───────────────────────────────────────────────────
+if live_camera_active:
+    st.markdown("### 🎥 Live Video Stream (Continuous Processing)")
+    live_placeholder = st.empty()
+    status_text = st.empty()
+    
+    cap = cv2.VideoCapture(int(cam_idx))
+    if not cap.isOpened():
+        st.error(f"❌ Could not open camera {cam_idx}. Please verify camera is connected.")
+    else:
+        st.caption("Live video streaming active. Toggle '▶️ Start Live Camera' in sidebar to stop.")
+        frame_cnt = 0
+        t_prev = time.time()
+        try:
+            while live_camera_active:
+                ret, frame = cap.read()
+                if not ret or frame is None:
+                    break
+                
+                # Run full inference pipeline on live frame
+                res = pipeline.run(frame)
+                
+                t_curr = time.time()
+                fps = 1.0 / max(1e-4, t_curr - t_prev)
+                t_prev = t_curr
+                
+                # Build overlaid frame
+                H, W = frame.shape[:2]
+                annotated = frame.copy()
+                seg = cv2.resize(res.segmentation, (W, H))
+                mask = (seg >= 0.5)
+                annotated[mask] = (annotated[mask] * 0.45 + np.array([40, 40, 220]) * 0.55).astype(np.uint8)
+                
+                # Contours
+                contours, _ = cv2.findContours((seg >= 0.5).astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                for cnt in contours:
+                    if cv2.contourArea(cnt) > 80:
+                        x, y, w, h = cv2.boundingRect(cnt)
+                        cv2.rectangle(annotated, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                        cv2.putText(annotated, "POTHOLE", (x, max(18, y - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                
+                # Convert to RGB for Streamlit
+                annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+                
+                # Dynamic action banner text
+                act_name = ACTION_NAMES.get(res.final_action, "Maintain Lane")
+                sev_val = float(res.state_vector[6]) if len(res.state_vector) > 6 else 0.0
+                
+                live_placeholder.image(annotated_rgb, channels="RGB", use_container_width=True)
+                status_text.markdown(
+                    f"**Action:** `{act_name.upper()}` | **Potholes:** `{res.n_potholes}` | **Severity:** `{sev_val:.2f}` | **FPS:** `{fps:.1f}` | **Latency:** `{res.inference_ms:.1f}ms`"
+                )
+                time.sleep(0.03) # ~30 FPS loop
+        finally:
+            cap.release()
+
 # ── Preview image ───────────────────────────────────────────────────────────────
-if image_bgr is not None:
+elif image_bgr is not None:
     preview_rgb = cv2.cvtColor(cv2.resize(image_bgr, (512, 512)), cv2.COLOR_BGR2RGB)
     col_prev, _ = st.columns([1, 2])
     with col_prev:
@@ -294,7 +357,7 @@ if image_bgr is not None:
 # ── Main pipeline run ───────────────────────────────────────────────────────────
 result: Optional[PipelineResult] = None
 
-if (run_pipeline or run_detection) and image_bgr is not None:
+if not live_camera_active and (run_pipeline or run_detection) and image_bgr is not None:
     with st.spinner("Running pipeline..."):
         pipeline.ema.alpha = alpha_ema
         result = pipeline.run(image_bgr)
