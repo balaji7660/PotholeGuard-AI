@@ -12,13 +12,12 @@
   <style>
     :root {
       --bg-dark: #07090e;
-      --panel-bg: rgba(13, 17, 23, 0.78);
-      --panel-border: rgba(56, 189, 248, 0.2);
+      --panel-bg: rgba(13, 17, 23, 0.85);
+      --panel-border: rgba(56, 189, 248, 0.25);
       --neon-blue: #38bdf8;
       --neon-green: #22c55e;
       --neon-yellow: #eab308;
       --neon-red: #ef4444;
-      --neon-purple: #a855f7;
       --text-main: #f1f5f9;
       --text-muted: #94a3b8;
     }
@@ -191,7 +190,7 @@
 
     .tel-card {
       flex: 1;
-      background: rgba(10, 14, 23, 0.8);
+      background: rgba(10, 14, 23, 0.85);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -232,7 +231,6 @@
       gap: 8px;
     }
 
-    /* Mode Pill Selector */
     .mode-selector {
       display: flex;
       background: rgba(10, 14, 23, 0.85);
@@ -265,7 +263,6 @@
       box-shadow: 0 2px 10px rgba(56, 189, 248, 0.4);
     }
 
-    /* Action Buttons Row */
     .controls-row {
       display: flex;
       align-items: center;
@@ -289,10 +286,7 @@
       cursor: pointer;
       transition: transform 0.1s, background 0.2s;
     }
-    .btn-icon:active {
-      transform: scale(0.92);
-      background: rgba(56, 189, 248, 0.2);
-    }
+    .btn-icon:active { transform: scale(0.92); }
     .btn-icon.active {
       background: var(--neon-blue);
       color: #000;
@@ -315,23 +309,20 @@
       gap: 6px;
       cursor: pointer;
       box-shadow: 0 4px 16px rgba(2, 132, 199, 0.3);
-      transition: transform 0.1s, filter 0.2s;
     }
-    .btn-primary:active { transform: scale(0.96); }
     .btn-primary.running {
       background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
       border-color: rgba(239, 68, 68, 0.5);
-      box-shadow: 0 4px 16px rgba(220, 38, 38, 0.3);
     }
 
-    /* Start / Permission Overlay */
+    /* Start Overlay */
     #start-overlay {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(7, 9, 14, 0.94);
+      background: rgba(7, 9, 14, 0.95);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       z-index: 100;
@@ -343,26 +334,14 @@
       text-align: center;
     }
 
-    .splash-logo {
-      font-size: 3.2rem;
-      margin-bottom: 12px;
-      animation: float 2.5s ease-in-out infinite;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
-    }
-
+    .splash-logo { font-size: 3.2rem; margin-bottom: 12px; }
     .splash-title {
       font-family: 'Orbitron', sans-serif;
       font-size: 1.45rem;
       font-weight: 900;
       color: #fff;
       margin-bottom: 6px;
-      letter-spacing: 0.05em;
     }
-
     .splash-desc {
       color: var(--text-muted);
       font-size: 0.84rem;
@@ -374,69 +353,46 @@
     .btn-launch {
       width: 100%;
       max-width: 280px;
-      height: 52px;
-      border-radius: 14px;
+      height: 48px;
+      border-radius: 12px;
       background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
       border: none;
       color: #031320;
       font-family: 'Orbitron', sans-serif;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 800;
-      letter-spacing: 0.06em;
       cursor: pointer;
-      box-shadow: 0 8px 24px rgba(56, 189, 248, 0.4);
+      box-shadow: 0 8px 24px rgba(56, 189, 248, 0.3);
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
     }
 
-    /* Hidden file input for photo upload */
     #file-input { display: none; }
-
-    /* Crosshair HUD graphics */
-    .hud-crosshair {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 140px;
-      height: 140px;
-      border: 1px dashed rgba(56, 189, 248, 0.25);
-      border-radius: 50%;
-      pointer-events: none;
-      z-index: 15;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .hud-crosshair::before {
-      content: '';
-      position: absolute;
-      width: 14px;
-      height: 1px;
-      background: rgba(56, 189, 248, 0.6);
-    }
-    .hud-crosshair::after {
-      content: '';
-      position: absolute;
-      width: 1px;
-      height: 14px;
-      background: rgba(56, 189, 248, 0.6);
-    }
   </style>
 </head>
 <body>
 
-  <!-- Start & Permissions Overlay -->
+  <!-- Start Overlay -->
   <div id="start-overlay">
     <div class="splash-logo">🚗</div>
     <h1 class="splash-title">POTHOLEGUARD-AI</h1>
-    <p class="splash-desc">Real-Time Mobile HUD for Autonomous Pothole Perception & Safety Decision System</p>
-    <button class="btn-launch" id="btn-start-camera">
-      <span>START REAL-TIME HUD</span>
+    <p class="splash-desc">Real-Time Autonomous Pothole Perception & Safety Decision System</p>
+    
+    <button class="btn-launch" id="btn-start-camera" style="margin-bottom: 12px;">
+      <span>📷 START PHONE CAMERA</span>
     </button>
-    <p style="margin-top: 18px; font-size: 0.72rem; color: #64748b;">Requires Camera & Audio permission for live AR & Voice Alerts</p>
+    
+    <button class="btn-launch" id="btn-start-sim" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; margin-bottom: 12px; font-size: 0.85rem;">
+      <span>🎮 RUN SIMULATED ROAD FEED</span>
+    </button>
+
+    <button class="btn-launch" id="btn-start-photo" style="background: rgba(255,255,255,0.12); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.25); font-size: 0.82rem;">
+      <span>📁 TEST WITH PHOTO</span>
+    </button>
+
+    <p style="margin-top: 18px; font-size: 0.72rem; color: #64748b;">Works with live camera on mobile or synthetic road simulation on any device</p>
   </div>
 
   <!-- Video Viewport -->
@@ -444,7 +400,6 @@
     <video id="camera-video" playsinline autoplay muted></video>
     <canvas id="ar-canvas"></canvas>
     <img id="heatmap-img" alt="Perception Heatmap" />
-    <div class="hud-crosshair"></div>
   </div>
 
   <!-- Top HUD Action Banner -->
@@ -479,7 +434,6 @@
 
   <!-- Bottom HUD Controls -->
   <div class="hud-footer">
-    <!-- View Modes -->
     <div class="mode-selector">
       <button class="mode-btn active" data-mode="ar">🎥 AR CAM</button>
       <button class="mode-btn" data-mode="depth">🌌 DEPTH</button>
@@ -487,23 +441,13 @@
       <button class="mode-btn" data-mode="road">🛣️ ROAD SIM</button>
     </div>
 
-    <!-- Controls Row -->
     <div class="controls-row">
-      <!-- Mute/Audio Button -->
       <button class="btn-icon active" id="btn-audio" title="Toggle Voice Alerts">🔊</button>
-      
-      <!-- Flip Camera -->
       <button class="btn-icon" id="btn-flip" title="Flip Camera">🔄</button>
-
-      <!-- Main Action: Pause / Resume Stream -->
       <button class="btn-primary" id="btn-stream-toggle">
         <span id="btn-stream-text">⚡ PAUSE STREAM</span>
       </button>
-
-      <!-- Torch / Flashlight (if supported) -->
       <button class="btn-icon" id="btn-torch" title="Toggle Torch">💡</button>
-
-      <!-- Photo Picker fallback -->
       <button class="btn-icon" id="btn-upload" title="Test Photo">📁</button>
     </div>
   </div>
@@ -511,26 +455,29 @@
   <input type="file" id="file-input" accept="image/*">
 
   <script>
-    // State management
     let videoStream = null;
     let videoTrack = null;
     let websocket = null;
     let isStreaming = false;
+    let isSimMode = false;
     let currentFacingMode = 'environment';
     let currentMode = 'ar';
     let voiceEnabled = true;
     let torchEnabled = false;
-    let prevAction = null;
     let lastVoiceTime = 0;
     
-    // Performance & FPS tracking
     let frameCount = 0;
     let lastFpsTime = performance.now();
     let currentFps = 0;
     let captureCanvas = document.createElement('canvas');
     let captureCtx = captureCanvas.getContext('2d', { willReadFrequently: true });
     
-    // DOM Elements
+    let simCanvas = document.createElement('canvas');
+    let simCtx = simCanvas.getContext('2d');
+    simCanvas.width = 448;
+    simCanvas.height = 336;
+    let simOffset = 0;
+
     const video = document.getElementById('camera-video');
     const arCanvas = document.getElementById('ar-canvas');
     const arCtx = arCanvas.getContext('2d');
@@ -551,7 +498,6 @@
     const btnStreamText = document.getElementById('btn-stream-text');
     const fileInput = document.getElementById('file-input');
 
-    // Resize AR Canvas to match display size
     function resizeCanvas() {
       arCanvas.width = window.innerWidth;
       arCanvas.height = window.innerHeight;
@@ -559,31 +505,22 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // Initialize Camera Stream
     async function startCamera(facing = 'environment') {
       if (videoStream) {
         videoStream.getTracks().forEach(track => track.stop());
       }
-
-      const constraints = {
-        audio: false,
-        video: {
-          facingMode: { ideal: facing },
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          frameRate: { ideal: 24, max: 30 }
-        }
-      };
-
       try {
-        videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+        videoStream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { facingMode: { ideal: facing }, width: { ideal: 640 }, height: { ideal: 480 } }
+        });
         video.srcObject = videoStream;
         videoTrack = videoStream.getVideoTracks()[0];
         currentFacingMode = facing;
         await video.play();
         return true;
       } catch (err) {
-        console.warn("Could not start environment camera, falling back to default:", err);
+        console.warn("Could not start environment camera, trying fallback:", err);
         try {
           videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
           video.srcObject = videoStream;
@@ -591,13 +528,52 @@
           await video.play();
           return true;
         } catch (err2) {
-          alert("Camera access denied or unavailable: " + err2.message);
+          console.warn("Camera unavailable:", err2);
           return false;
         }
       }
     }
 
-    // Connect WebSocket
+    function renderSimulatedRoadFrame() {
+      simOffset = (simOffset + 3) % 100;
+      const W = simCanvas.width;
+      const H = simCanvas.height;
+
+      simCtx.fillStyle = '#1e293b';
+      simCtx.fillRect(0, 0, W, H * 0.45);
+      simCtx.fillStyle = '#334155';
+      simCtx.fillRect(0, H * 0.45, W, H * 0.55);
+
+      simCtx.fillStyle = '#0f172a';
+      simCtx.beginPath();
+      simCtx.moveTo(W * 0.35, H * 0.45);
+      simCtx.lineTo(W * 0.65, H * 0.45);
+      simCtx.lineTo(W * 0.95, H);
+      simCtx.lineTo(W * 0.05, H);
+      simCtx.closePath();
+      simCtx.fill();
+
+      simCtx.strokeStyle = '#facc15';
+      simCtx.lineWidth = 4;
+      simCtx.setLineDash([20, 20]);
+      simCtx.lineDashOffset = -simOffset;
+      simCtx.beginPath();
+      simCtx.moveTo(W * 0.5, H * 0.45);
+      simCtx.lineTo(W * 0.5, H);
+      simCtx.stroke();
+      simCtx.setLineDash([]);
+
+      simCtx.fillStyle = '#020617';
+      simCtx.beginPath();
+      const potholeY = H * 0.72 + Math.sin(simOffset * 0.08) * 10;
+      const potholeX = W * 0.38 + Math.cos(simOffset * 0.05) * 40;
+      simCtx.ellipse(potholeX, potholeY, 45, 18, 0, 0, Math.PI * 2);
+      simCtx.fill();
+
+      arCtx.drawImage(simCanvas, 0, 0, arCanvas.width, arCanvas.height);
+      return simCanvas.toDataURL('image/jpeg', 0.65);
+    }
+
     function connectWebSocket() {
       const loc = window.location;
       const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -606,10 +582,8 @@
       websocket = new WebSocket(wsUrl);
 
       websocket.onopen = () => {
-        console.log("WebSocket connected to AI inference backend.");
-        if (isStreaming) {
-          requestNextFrame();
-        }
+        console.log("WebSocket connected.");
+        if (isStreaming) requestNextFrame();
       };
 
       websocket.onmessage = (event) => {
@@ -619,79 +593,64 @@
         } catch (e) {
           console.error("Error parsing WS frame:", e);
         }
-
         if (isStreaming) {
-          setTimeout(requestNextFrame, 35); // Target ~25-28 FPS
+          setTimeout(requestNextFrame, 35);
         }
       };
 
-      websocket.onerror = (err) => {
-        console.warn("WebSocket error:", err);
-      };
-
       websocket.onclose = () => {
-        console.log("WebSocket disconnected. Reconnecting in 1.5s...");
         setTimeout(connectWebSocket, 1500);
       };
     }
 
-    // Capture & Send Frame
     function requestNextFrame() {
       if (!isStreaming || !websocket || websocket.readyState !== WebSocket.OPEN) return;
-      if (video.videoWidth === 0 || video.videoHeight === 0) {
-        setTimeout(requestNextFrame, 100);
-        return;
+
+      let b64 = "";
+      if (isSimMode || !videoStream) {
+        b64 = renderSimulatedRoadFrame();
+      } else {
+        if (video.videoWidth === 0 || video.videoHeight === 0) {
+          setTimeout(requestNextFrame, 100);
+          return;
+        }
+        const targetW = 448;
+        const targetH = Math.round(video.videoHeight * (targetW / video.videoWidth));
+        captureCanvas.width = targetW;
+        captureCanvas.height = targetH;
+        captureCtx.drawImage(video, 0, 0, targetW, targetH);
+        b64 = captureCanvas.toDataURL('image/jpeg', 0.65);
       }
-
-      // Downsample for rapid network transmission (~384x288 or 512x384)
-      const targetW = 448;
-      const targetH = Math.round(video.videoHeight * (targetW / video.videoWidth));
-      captureCanvas.width = targetW;
-      captureCanvas.height = targetH;
-      captureCtx.drawImage(video, 0, 0, targetW, targetH);
-
-      const b64 = captureCanvas.toDataURL('image/jpeg', 0.65);
-      const needMaps = (currentMode !== 'ar');
 
       websocket.send(JSON.stringify({
         cmd: 'frame',
         image: b64,
-        include_maps: needMaps,
+        include_maps: (currentMode !== 'ar'),
         frame_id: ++frameCount
       }));
     }
 
-    // Speak Voice Warning using Web Speech Synthesis
     function speakAlert(text) {
       if (!voiceEnabled || !('speechSynthesis' in window)) return;
       const now = Date.now();
-      // Throttle speech alerts to avoid overlapping talk
       if (now - lastVoiceTime < 2400) return;
       lastVoiceTime = now;
 
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 1.05;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
       window.speechSynthesis.speak(utterance);
     }
 
-    // Trigger Mobile Device Vibration
     function triggerHaptic(type) {
       if (!('vibrate' in navigator)) return;
-      if (type === 'brake') {
-        navigator.vibrate([200, 80, 200, 80, 300]);
-      } else if (type === 'hazard') {
-        navigator.vibrate([120, 60, 120]);
-      }
+      if (type === 'brake') navigator.vibrate([200, 80, 200, 80, 300]);
+      else if (type === 'hazard') navigator.vibrate([120, 60, 120]);
     }
 
-    // Handle Inference Results & Update HUD
     function handleInferenceResult(data) {
       if (data.status !== 'success') return;
 
-      // 1. Calculate FPS & Latency
       const now = performance.now();
       if (now - lastFpsTime >= 1000) {
         currentFps = Math.round((frameCount * 1000) / (now - lastFpsTime));
@@ -700,7 +659,6 @@
       }
       telFps.textContent = `${data.inference_ms} ms | ${currentFps > 0 ? currentFps : '--'} FPS`;
 
-      // 2. Update Action Banner
       const action = data.action;
       const isOverride = data.srl_override;
       const isBrake = data.override_reason && data.override_reason.includes('EMERGENCY');
@@ -714,7 +672,7 @@
         srlPill.className = 'srl-pill override';
         srlPill.textContent = 'EMERGENCY';
         triggerHaptic('brake');
-      } else if (action === 1) { // Shift Left
+      } else if (action === 1) {
         actionBanner.classList.add('action-left');
         actionIcon.textContent = '⬅️';
         actionTitle.textContent = 'SHIFT LEFT';
@@ -722,7 +680,7 @@
         srlPill.className = isOverride ? 'srl-pill override' : 'srl-pill';
         srlPill.textContent = isOverride ? 'OVERRIDE' : 'ACTIVE';
         if (isOverride) triggerHaptic('hazard');
-      } else if (action === 2) { // Shift Right
+      } else if (action === 2) {
         actionBanner.classList.add('action-right');
         actionIcon.textContent = '➡️';
         actionTitle.textContent = 'SHIFT RIGHT';
@@ -730,7 +688,7 @@
         srlPill.className = isOverride ? 'srl-pill override' : 'srl-pill';
         srlPill.textContent = isOverride ? 'OVERRIDE' : 'ACTIVE';
         if (isOverride) triggerHaptic('hazard');
-      } else { // Maintain Lane
+      } else {
         actionBanner.classList.add('action-maintain');
         actionIcon.textContent = '⬆️';
         actionTitle.textContent = 'MAINTAIN LANE';
@@ -739,27 +697,22 @@
         srlPill.textContent = 'SAFE';
       }
 
-      // 3. Voice Alerts
-      if (data.voice_alert) {
-        speakAlert(data.voice_alert);
-      }
+      if (data.voice_alert) speakAlert(data.voice_alert);
 
-      // 4. Update Telemetry
       telSeverity.textContent = `${data.severity.toFixed(2)} (${data.severity_level})`;
       telSeverity.className = 'tel-value ' + (data.severity_level === 'HIGH' ? 'sev-high' : (data.severity_level === 'MEDIUM' ? 'sev-medium' : 'sev-low'));
       telPotholes.textContent = `${data.n_potholes} DETECTED`;
 
-      // 5. Render AR Canvas / Heatmaps
       renderAR(data);
     }
 
-    // Render Augmented Reality Visuals
     function renderAR(data) {
       const W = arCanvas.width;
       const H = arCanvas.height;
-      arCtx.clearRect(0, 0, W, H);
+      if (!isSimMode && videoStream) {
+        arCtx.clearRect(0, 0, W, H);
+      }
 
-      // Handle Heatmap modes
       if (currentMode === 'depth' && data.depth_b64) {
         heatmapImg.src = 'data:image/jpeg;base64,' + data.depth_b64;
         heatmapImg.style.display = 'block';
@@ -776,27 +729,23 @@
         heatmapImg.style.display = 'none';
       }
 
-      // Draw Pothole Contours & Hazards in AR Mode
       if (data.potholes && data.potholes.length > 0) {
         data.potholes.forEach((pothole, idx) => {
           const poly = pothole.polygon;
-          if (!poly || poly.length < 3) return;
-
-          // Draw filled translucent red polygon
-          arCtx.beginPath();
-          arCtx.moveTo(poly[0][0] * W, poly[0][1] * H);
-          for (let i = 1; i < poly.length; i++) {
-            arCtx.lineTo(poly[i][0] * W, poly[i][1] * H);
+          if (poly && poly.length >= 3) {
+            arCtx.beginPath();
+            arCtx.moveTo(poly[0][0] * W, poly[0][1] * H);
+            for (let i = 1; i < poly.length; i++) {
+              arCtx.lineTo(poly[i][0] * W, poly[i][1] * H);
+            }
+            arCtx.closePath();
+            arCtx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+            arCtx.fill();
+            arCtx.lineWidth = 3;
+            arCtx.strokeStyle = '#ef4444';
+            arCtx.stroke();
           }
-          arCtx.closePath();
 
-          arCtx.fillStyle = 'rgba(239, 68, 68, 0.35)';
-          arCtx.fill();
-          arCtx.lineWidth = 3;
-          arCtx.strokeStyle = '#ef4444';
-          arCtx.stroke();
-
-          // Draw Bounding Box with hazard label
           const box = pothole.box;
           const bx = box.x * W;
           const by = box.y * H;
@@ -807,68 +756,72 @@
           arCtx.lineWidth = 1.5;
           arCtx.strokeRect(bx, by, bw, bh);
 
-          // Hazard tag
           arCtx.fillStyle = '#ef4444';
-          arCtx.fillRect(bx, Math.max(0, by - 20), 92, 18);
+          arCtx.fillRect(bx, Math.max(0, by - 18), 84, 16);
           arCtx.fillStyle = '#ffffff';
-          arCtx.font = 'bold 10px Orbitron, sans-serif';
-          arCtx.fillText(`POTHOLE #${idx+1}`, bx + 4, Math.max(14, by - 7));
+          arCtx.font = 'bold 9px Orbitron, sans-serif';
+          arCtx.fillText(`POTHOLE #${idx+1}`, bx + 4, Math.max(12, by - 6));
         });
       }
 
-      // Draw Futuristic HUD Road Lane Guides & Trajectory Arc
-      drawTrajectoryHUD(W, H, data.action);
-    }
-
-    function drawTrajectoryHUD(W, H, action) {
-      // Perspective lane bounds
+      // Guidance Trajectory
       const bottomCenter = W / 2;
-      const bottomY = H;
-      const horizonY = H * 0.48;
-
       let targetX = W * 0.5;
-      if (action === 1) targetX = W * 0.28; // Left
-      if (action === 2) targetX = W * 0.72; // Right
+      if (data.action === 1) targetX = W * 0.28;
+      if (data.action === 2) targetX = W * 0.72;
 
-      // Draw dynamic green/blue guidance curve
       arCtx.beginPath();
-      arCtx.moveTo(bottomCenter, bottomY);
-      arCtx.quadraticCurveTo(bottomCenter, H * 0.7, targetX, horizonY);
+      arCtx.moveTo(bottomCenter, H);
+      arCtx.quadraticCurveTo(bottomCenter, H * 0.7, targetX, H * 0.48);
       arCtx.lineWidth = 4;
-      arCtx.strokeStyle = (action === 0) ? 'rgba(56, 189, 248, 0.7)' : 'rgba(34, 197, 94, 0.85)';
+      arCtx.strokeStyle = (data.action === 0) ? 'rgba(56, 189, 248, 0.7)' : 'rgba(34, 197, 94, 0.85)';
       arCtx.setLineDash([8, 6]);
       arCtx.stroke();
       arCtx.setLineDash([]);
     }
 
-    // Toggle Torch / Flashlight
     async function toggleTorch() {
       if (!videoTrack) return;
       try {
         const capabilities = videoTrack.getCapabilities();
         if (capabilities.torch) {
           torchEnabled = !torchEnabled;
-          await videoTrack.applyConstraints({
-            advanced: [{ torch: torchEnabled }]
-          });
+          await videoTrack.applyConstraints({ advanced: [{ torch: torchEnabled }] });
           btnTorch.classList.toggle('active', torchEnabled);
         } else {
-          alert("Torch/Flashlight not supported on this camera.");
+          alert("Torch not supported on this camera.");
         }
       } catch (err) {
-        console.warn("Torch error:", err);
+        console.warn(err);
       }
     }
 
-    // Event Listeners
     document.getElementById('btn-start-camera').addEventListener('click', async () => {
       startOverlay.style.display = 'none';
       const ok = await startCamera('environment');
       if (ok) {
         isStreaming = true;
         connectWebSocket();
+      } else {
+        startSimMode();
       }
     });
+
+    document.getElementById('btn-start-sim').addEventListener('click', () => {
+      startOverlay.style.display = 'none';
+      startSimMode();
+    });
+
+    document.getElementById('btn-start-photo').addEventListener('click', () => {
+      startOverlay.style.display = 'none';
+      fileInput.click();
+    });
+
+    function startSimMode() {
+      isSimMode = true;
+      isStreaming = true;
+      connectWebSocket();
+    }
 
     btnStreamToggle.addEventListener('click', () => {
       isStreaming = !isStreaming;
@@ -895,7 +848,6 @@
 
     btnTorch.addEventListener('click', toggleTorch);
 
-    // View Mode Selectors
     document.querySelectorAll('.mode-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
@@ -904,7 +856,6 @@
       });
     });
 
-    // Upload Photo Fallback
     document.getElementById('btn-upload').addEventListener('click', () => {
       fileInput.click();
     });
@@ -919,10 +870,7 @@
           const res = await fetch('/api/detect_frame', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              image_b64: b64,
-              include_maps: true
-            })
+            body: JSON.stringify({ image_b64: b64, include_maps: true })
           });
           const data = await res.json();
           handleInferenceResult(data);
