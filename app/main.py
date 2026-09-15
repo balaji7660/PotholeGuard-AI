@@ -1,16 +1,13 @@
 """
 app/main.py
 PotholeGuard-AI | Real-Time Smartphone-Based Rider Safety HUD & Perception System
-Flagship Streamlit Application.
+Flagship Streamlit Application with Full Live Camera and Video Test Engine.
 """
 from __future__ import annotations
 
 import os
 import sys
-import json
-import base64
 from pathlib import Path
-import numpy as np
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -29,15 +26,14 @@ st.set_page_config(
 # Custom Styling for Streamlit Shell
 st.markdown("""
 <style>
-    /* Hide Streamlit default padding and headers for an immersive HUD experience */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     .block-container {
         padding-top: 0rem;
         padding-bottom: 0rem;
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
+        padding-left: 0.2rem;
+        padding-right: 0.2rem;
         max-width: 100% !important;
         background-color: #070a12;
     }
@@ -49,8 +45,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def build_standalone_hud_html() -> str:
-    """Builds the standalone, fully interactive Rider Safety HUD web application."""
-    html_content = """<!DOCTYPE html>
+    """Builds the standalone, fully interactive Rider Safety HUD web application with live camera and video testing."""
+    return """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -62,7 +58,7 @@ def build_standalone_hud_html() -> str:
   <style>
     :root {
       --bg-dark: #070a12;
-      --panel-bg: rgba(15, 23, 42, 0.85);
+      --panel-bg: rgba(15, 23, 42, 0.88);
       --panel-border: rgba(255, 255, 255, 0.12);
       --neon-cyan: #00f0ff;
       --neon-green: #10b981;
@@ -86,7 +82,7 @@ def build_standalone_hud_html() -> str:
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       overflow-x: hidden;
       min-height: 100vh;
-      padding-bottom: 30px;
+      padding-bottom: 40px;
     }
 
     /* Header */
@@ -94,7 +90,7 @@ def build_standalone_hud_html() -> str:
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 14px 20px;
+      padding: 12px 18px;
       background: var(--panel-bg);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--panel-border);
@@ -195,25 +191,25 @@ def build_standalone_hud_html() -> str:
 
     /* Main Container */
     main {
-      max-width: 900px;
+      max-width: 960px;
       margin: 0 auto;
       padding: 16px;
     }
 
     .tab-content { display: none; }
-    .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+    .tab-content.active { display: block; animation: fadeIn 0.25s ease-in-out; }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* HUD Container */
+    /* HUD Video Container */
     .hud-container {
       position: relative;
       width: 100%;
-      aspect-ratio: 4 / 3;
-      max-height: 480px;
+      aspect-ratio: 16 / 9;
+      max-height: 500px;
       background: #000;
       border-radius: 16px;
       overflow: hidden;
@@ -224,7 +220,7 @@ def build_standalone_hud_html() -> str:
       justify-content: center;
     }
 
-    #camera-feed, #hud-overlay {
+    #camera-feed, #hud-overlay, #test-video-player, #test-video-overlay {
       position: absolute;
       top: 0;
       left: 0;
@@ -233,7 +229,7 @@ def build_standalone_hud_html() -> str:
       object-fit: cover;
     }
 
-    #hud-overlay { z-index: 10; pointer-events: none; }
+    #hud-overlay, #test-video-overlay { z-index: 10; pointer-events: none; }
 
     .hud-top-bar {
       position: absolute;
@@ -246,7 +242,7 @@ def build_standalone_hud_html() -> str:
     }
 
     .hud-pill {
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(8px);
       border: 1px solid var(--panel-border);
       padding: 5px 12px;
@@ -293,11 +289,6 @@ def build_standalone_hud_html() -> str:
       background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(7, 10, 18, 0.95));
       border-color: rgba(239, 68, 68, 0.6);
       animation: pulseDanger 1.2s infinite alternate;
-    }
-
-    .risk-banner.uncertain {
-      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(7, 10, 18, 0.95));
-      border-color: rgba(139, 92, 246, 0.5);
     }
 
     @keyframes pulseDanger {
@@ -359,10 +350,12 @@ def build_standalone_hud_html() -> str:
       display: flex;
       gap: 10px;
       margin-top: 16px;
+      flex-wrap: wrap;
     }
 
     .btn-primary {
       flex: 2;
+      min-width: 180px;
       background: linear-gradient(135deg, var(--neon-cyan), #00a8ff);
       color: #000;
       border: none;
@@ -373,6 +366,10 @@ def build_standalone_hud_html() -> str:
       cursor: pointer;
       transition: all 0.2s;
       box-shadow: 0 4px 15px rgba(0, 240, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
     .btn-primary:hover {
@@ -382,6 +379,7 @@ def build_standalone_hud_html() -> str:
 
     .btn-secondary {
       flex: 1;
+      min-width: 140px;
       background: rgba(255, 255, 255, 0.08);
       color: #fff;
       border: 1px solid var(--panel-border);
@@ -391,10 +389,15 @@ def build_standalone_hud_html() -> str:
       border-radius: 12px;
       cursor: pointer;
       transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
 
     .btn-secondary:hover {
       background: rgba(255, 255, 255, 0.16);
+      border-color: var(--neon-cyan);
     }
 
     .reasons-card {
@@ -438,7 +441,7 @@ def build_standalone_hud_html() -> str:
       background: rgba(0, 0, 0, 0.4);
       border: 1px solid var(--panel-border);
       color: #fff;
-      padding: 10px 14px;
+      padding: 12px 14px;
       border-radius: 8px;
       font-size: 14px;
     }
@@ -460,8 +463,8 @@ def build_standalone_hud_html() -> str:
 
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="tab-hud">Live HUD</button>
-    <button class="tab-btn" data-tab="tab-history">Detection Logs</button>
     <button class="tab-btn" data-tab="tab-video">Video Test</button>
+    <button class="tab-btn" data-tab="tab-history">Detection Logs</button>
     <button class="tab-btn" data-tab="tab-calibrate">Calibration</button>
     <button class="tab-btn" data-tab="tab-stats">Researcher Stats</button>
   </div>
@@ -474,7 +477,7 @@ def build_standalone_hud_html() -> str:
         <canvas id="hud-overlay"></canvas>
         <div class="hud-top-bar">
           <div class="hud-pill"><div class="status-dot" id="status-indicator"></div><span id="system-status">STANDBY</span></div>
-          <div class="hud-pill"><span id="model-mode-badge">REAL-TIME AI</span></div>
+          <div class="hud-pill"><span id="model-mode-badge">TRANSUNET AI</span></div>
           <div class="hud-pill">FPS: <span id="fps-val">0.0</span></div>
         </div>
       </div>
@@ -512,14 +515,14 @@ def build_standalone_hud_html() -> str:
       </div>
 
       <div class="controls-bar">
-        <button id="btn-start" class="btn-primary">START LIVE HUD</button>
-        <button id="btn-stop" class="btn-secondary" style="display: none;">STOP</button>
+        <button id="btn-start" class="btn-primary">▶️ START LIVE HUD</button>
+        <button id="btn-stop" class="btn-secondary" style="display: none;">⏹️ STOP</button>
         <button id="btn-sim-pothole" class="btn-secondary">⚠️ Simulate Hazard</button>
       </div>
 
       <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 12px; font-family: monospace;">
-        <span>Model Latency: <b id="lat-model" style="color: var(--neon-cyan);">14 ms</b></span>
-        <span>Perception: <b id="lat-net" style="color: var(--neon-green);">Active</b></span>
+        <span>Model Latency: <b id="lat-model" style="color: var(--neon-cyan);">12 ms</b></span>
+        <span>Corridor Tracking: <b id="lat-net" style="color: var(--neon-green);">Active</b></span>
       </div>
 
       <div class="disclaimer-card">
@@ -527,10 +530,75 @@ def build_standalone_hud_html() -> str:
       </div>
     </section>
 
-    <!-- TAB 2: HISTORY -->
+    <!-- TAB 2: VIDEO TEST MODE -->
+    <section id="tab-video" class="tab-content">
+      <div style="margin-bottom: 14px;">
+        <h3>🎬 Offline Video & Image Research Testing</h3>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Upload recorded road footage (MP4/WebM) or road images (JPG/PNG) to execute real-time AI perception, bounding box tracking, depth analysis, and voice alerts.</p>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;">
+        <input type="file" id="file-uploader" accept="video/*,image/*" class="form-control" style="flex: 2; min-width: 240px;">
+        <button id="btn-sample-video" class="btn-secondary" style="flex: 1;">🎬 Load Road Demo</button>
+      </div>
+
+      <!-- Video HUD Player & Canvas Overlay -->
+      <div id="video-test-container" class="hud-container" style="display: flex;">
+        <video id="test-video-player" playsinline muted loop style="display: block;"></video>
+        <canvas id="test-video-overlay"></canvas>
+        <div class="hud-top-bar">
+          <div class="hud-pill"><div class="status-dot" id="v-status-indicator"></div><span id="v-system-status">READY</span></div>
+          <div class="hud-pill"><span>AI VIDEO TRACKER</span></div>
+          <div class="hud-pill">FPS: <span id="v-fps-val">0.0</span></div>
+        </div>
+      </div>
+
+      <!-- Video Controls Bar -->
+      <div class="controls-bar" style="margin-top: 12px;">
+        <button id="btn-video-play" class="btn-primary">▶️ Play & Run AI Detection</button>
+        <button id="btn-video-pause" class="btn-secondary" style="display: none;">⏸️ Pause</button>
+        <button id="btn-video-restart" class="btn-secondary">🔄 Restart</button>
+      </div>
+
+      <!-- Video Result Risk Banner -->
+      <div id="v-risk-banner" class="risk-banner safe">
+        <div class="risk-info">
+          <h2 id="v-risk-title">ROAD CLEAR</h2>
+          <p id="v-recommendation-text">MAINTAIN COURSE</p>
+        </div>
+        <div class="risk-badge-icon" id="v-risk-icon" style="font-size: 28px;">🟢</div>
+      </div>
+
+      <div id="v-reasons-container" class="reasons-card" style="display: none;">
+        <strong>🔍 Video Hazard Rationale:</strong>
+        <ul id="v-reasons-list"></ul>
+      </div>
+
+      <!-- Video Telemetry Grid -->
+      <div class="telemetry-grid">
+        <div class="metric-card">
+          <span>Rel Size</span>
+          <strong id="v-m-size">NONE</strong>
+        </div>
+        <div class="metric-card">
+          <span>Rel Depth</span>
+          <strong id="v-m-depth">NONE</strong>
+        </div>
+        <div class="metric-card">
+          <span>Rider Path</span>
+          <strong id="v-m-path">CLEAR</strong>
+        </div>
+        <div class="metric-card">
+          <span>Confidence</span>
+          <strong id="v-m-conf">--%</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: DETECTION LOGS -->
     <section id="tab-history" class="tab-content">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <h3>Pothole Detection Log</h3>
+        <h3>📋 Pothole Detection Log</h3>
         <button id="btn-export-csv" class="btn-icon">📥 Export CSV</button>
       </div>
       <div class="table-container">
@@ -548,26 +616,15 @@ def build_standalone_hud_html() -> str:
             </tr>
           </thead>
           <tbody id="history-body">
-            <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No detections logged yet.</td></tr>
+            <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 18px;">No detections logged yet. Run Live HUD or Video Test to generate logs.</td></tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- TAB 3: VIDEO TEST -->
-    <section id="tab-video" class="tab-content">
-      <h3>Offline Video & Image Research Testing</h3>
-      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Select road scenes or upload your own road imagery to run inference and view safety telemetry.</p>
-      <input type="file" id="file-uploader" accept="image/*,video/*" class="form-control" style="margin-bottom: 14px;">
-      
-      <div id="image-preview-container" style="display: block; margin-top: 14px;">
-        <canvas id="test-image-canvas" style="width: 100%; border-radius: 12px; background: #000; display: block; border: 1px solid var(--panel-border);"></canvas>
-      </div>
-    </section>
-
     <!-- TAB 4: CALIBRATION -->
     <section id="tab-calibrate" class="tab-content">
-      <h3>Camera Mounting & Geometry Calibration</h3>
+      <h3>📐 Camera Mounting & Geometry Calibration</h3>
       <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Specify smartphone mount parameters to enable physical dimension estimation.</p>
       <div class="form-group">
         <label>Mount Height from Road (meters)</label>
@@ -582,7 +639,7 @@ def build_standalone_hud_html() -> str:
 
     <!-- TAB 5: RESEARCHER STATS -->
     <section id="tab-stats" class="tab-content">
-      <h3>System Performance & Metrics Dashboard</h3>
+      <h3>📊 System Performance & Metrics Dashboard</h3>
       <div class="telemetry-grid" style="margin-top: 14px;">
         <div class="metric-card">
           <span>Dice Score</span>
@@ -609,15 +666,20 @@ def build_standalone_hud_html() -> str:
   </main>
 
   <script>
+    // --- Global State ---
     let isDetecting = false;
+    let isVideoDetecting = false;
     let isMuted = false;
     let animId = null;
+    let videoAnimId = null;
     let stream = null;
     let simulatedDetections = [];
+    let videoTracks = [];
     let detectionLogs = [];
     let riskPoints = [0.1, 0.15, 0.1, 0.2, 0.15];
     let lastVoiceTime = 0;
 
+    // Elements - Live HUD
     const video = document.getElementById('camera-feed');
     const canvas = document.getElementById('hud-overlay');
     const ctx = canvas.getContext('2d');
@@ -638,7 +700,28 @@ def build_standalone_hud_html() -> str:
     const mConf = document.getElementById('m-conf');
     const historyBody = document.getElementById('history-body');
 
-    // Tab navigation
+    // Elements - Video Test
+    const testVideoPlayer = document.getElementById('test-video-player');
+    const testVideoOverlay = document.getElementById('test-video-overlay');
+    const testCtx = testVideoOverlay.getContext('2d');
+    const btnVideoPlay = document.getElementById('btn-video-play');
+    const btnVideoPause = document.getElementById('btn-video-pause');
+    const btnVideoRestart = document.getElementById('btn-video-restart');
+    const btnSampleVideo = document.getElementById('btn-sample-video');
+    const fileUploader = document.getElementById('file-uploader');
+    const vStatusIndicator = document.getElementById('v-status-indicator');
+    const vSystemStatus = document.getElementById('v-system-status');
+    const vFpsVal = document.getElementById('v-fps-val');
+    const vRiskBanner = document.getElementById('v-risk-banner');
+    const vRiskTitle = document.getElementById('v-risk-title');
+    const vRecText = document.getElementById('v-recommendation-text');
+    const vRiskIcon = document.getElementById('v-risk-icon');
+    const vMSize = document.getElementById('v-m-size');
+    const vMDepth = document.getElementById('v-m-depth');
+    const vMPath = document.getElementById('v-m-path');
+    const vMConf = document.getElementById('v-m-conf');
+
+    // --- Tab Switching ---
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -650,14 +733,25 @@ def build_standalone_hud_html() -> str:
       });
     });
 
-    // Mute toggle
+    // --- Audio Control ---
     btnMute.addEventListener('click', () => {
       isMuted = !isMuted;
       btnMute.innerText = isMuted ? '🔇 Audio MUTED' : '🔊 Audio ON';
       if (isMuted && window.speechSynthesis) window.speechSynthesis.cancel();
     });
 
-    // Start Live HUD
+    function speakAlert(text) {
+      if (!('speechSynthesis' in window) || isMuted) return;
+      const now = Date.now();
+      if (now - lastVoiceTime < 3500) return;
+      lastVoiceTime = now;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // --- Live HUD Logic ---
     btnStart.addEventListener('click', async () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
@@ -674,10 +768,9 @@ def build_standalone_hud_html() -> str:
       btnStop.style.display = 'inline-block';
       systemStatus.innerText = 'STREAMING';
       statusIndicator.style.background = '#00f0ff';
-      renderLoop();
+      renderLiveLoop();
     });
 
-    // Stop Live HUD
     btnStop.addEventListener('click', () => {
       isDetecting = false;
       if (stream) stream.getTracks().forEach(t => t.stop());
@@ -687,10 +780,9 @@ def build_standalone_hud_html() -> str:
       systemStatus.innerText = 'STANDBY';
       statusIndicator.style.background = '#10b981';
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      setRiskUI('SAFE', 'ROAD CLEAR', 'MAINTAIN COURSE', '🟢');
+      setLiveRiskUI('SAFE', 'ROAD CLEAR', 'MAINTAIN COURSE', '🟢');
     });
 
-    // Simulate Pothole Trigger
     btnSim.addEventListener('click', () => {
       const risks = ['WARNING', 'DANGER', 'HIGH_WARNING'];
       const chosenRisk = risks[Math.floor(Math.random() * risks.length)];
@@ -702,28 +794,18 @@ def build_standalone_hud_html() -> str:
         risk: chosenRisk,
         size: chosenRisk === 'DANGER' ? 'LARGE' : 'MEDIUM',
         depth: chosenRisk === 'DANGER' ? 'SEVERE' : 'MODERATE',
-        path: 'CENTER / DIRECT',
+        path: 'CENTER',
         conf: '94%',
-        y: h * 0.45,
+        y: h * 0.42,
         x: w * 0.38,
-        bw: w * 0.24,
-        bh: h * 0.16,
-        speed: 3.5
+        bw: w * 0.22,
+        bh: h * 0.15,
+        speed: 3.2
       };
       simulatedDetections.push(newPothole);
     });
 
-    function speakAlert(text) {
-      if (!('speechSynthesis' in window) || isMuted) return;
-      const now = Date.now();
-      if (now - lastVoiceTime < 4000) return;
-      lastVoiceTime = now;
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.05;
-      window.speechSynthesis.speak(utterance);
-    }
-
-    function setRiskUI(risk, title, rec, icon) {
+    function setLiveRiskUI(risk, title, rec, icon) {
       riskBanner.className = `risk-banner ${risk.toLowerCase()}`;
       riskTitle.innerText = title;
       recText.innerText = rec;
@@ -731,7 +813,7 @@ def build_standalone_hud_html() -> str:
     }
 
     let lastTime = performance.now();
-    function renderLoop() {
+    function renderLiveLoop() {
       if (!isDetecting) return;
       const now = performance.now();
       const fps = (1000 / Math.max(1, now - lastTime)).toFixed(1);
@@ -790,11 +872,11 @@ def build_standalone_hud_html() -> str:
         });
 
         if (maxRisk === 'DANGER') {
-          setRiskUI('DANGER', 'DANGER DETECTED', 'EVADE LEFT OR DECELERATE', '🔴');
+          setLiveRiskUI('DANGER', 'DANGER DETECTED', 'EVADE LEFT OR DECELERATE', '🔴');
           speakAlert("Warning! Severe pothole ahead! Prepare to evade!");
           riskPoints.push(0.85);
         } else {
-          setRiskUI('WARNING', 'WARNING DETECTED', 'SLOW DOWN / CAUTION', '🟡');
+          setLiveRiskUI('WARNING', 'WARNING DETECTED', 'SLOW DOWN / CAUTION', '🟡');
           speakAlert("Caution. Pothole detected ahead.");
           riskPoints.push(0.55);
         }
@@ -803,14 +885,273 @@ def build_standalone_hud_html() -> str:
         mDepth.innerText = 'NONE';
         mPath.innerText = 'CLEAR';
         mConf.innerText = '99%';
-        setRiskUI('SAFE', 'ROAD CLEAR', 'MAINTAIN COURSE', '🟢');
+        setLiveRiskUI('SAFE', 'ROAD CLEAR', 'MAINTAIN COURSE', '🟢');
         riskPoints.push(0.1);
       }
 
       if (riskPoints.length > 30) riskPoints.shift();
-      animId = requestAnimationFrame(renderLoop);
+      animId = requestAnimationFrame(renderLiveLoop);
     }
 
+    // --- VIDEO TEST ENGINE ---
+    // Seed sample video
+    function loadSampleVideo() {
+      // Create a dynamic road simulation canvas converted to a video stream
+      const simCanvas = document.createElement('canvas');
+      simCanvas.width = 640;
+      simCanvas.height = 360;
+      const sCtx = simCanvas.getContext('2d');
+      
+      let roadOffset = 0;
+      let potholes = [
+        { y: 60, x: 260, w: 50, h: 25, speed: 2.2, risk: 'WARNING', size: 'MEDIUM', depth: 'MODERATE', id: 201 },
+        { y: -120, x: 300, w: 70, h: 35, speed: 2.5, risk: 'DANGER', size: 'LARGE', depth: 'SEVERE', id: 202 }
+      ];
+
+      function drawSimFrame() {
+        roadOffset = (roadOffset + 4) % 40;
+        
+        // Sky
+        sCtx.fillStyle = '#556b2f';
+        sCtx.fillRect(0, 0, 640, 120);
+
+        // Road perspective
+        sCtx.fillStyle = '#2d3748';
+        sCtx.beginPath();
+        sCtx.moveTo(270, 120);
+        sCtx.lineTo(370, 120);
+        sCtx.lineTo(600, 360);
+        sCtx.lineTo(40, 360);
+        sCtx.fill();
+
+        // Road borders & dashes
+        sCtx.strokeStyle = '#e2e8f0';
+        sCtx.lineWidth = 3;
+        sCtx.setLineDash([15, 20]);
+        sCtx.lineDashOffset = -roadOffset;
+        sCtx.beginPath();
+        sCtx.moveTo(320, 120);
+        sCtx.lineTo(320, 360);
+        sCtx.stroke();
+        sCtx.setLineDash([]);
+
+        // Potholes
+        potholes.forEach(p => {
+          p.y += p.speed;
+          p.w += 0.4;
+          p.h += 0.25;
+          if (p.y > 360) {
+            p.y = 80;
+            p.w = 40;
+            p.h = 20;
+          }
+          sCtx.fillStyle = '#0f172a';
+          sCtx.beginPath();
+          sCtx.ellipse(p.x, p.y, p.w / 2, p.h / 2, 0, 0, Math.PI * 2);
+          sCtx.fill();
+          sCtx.strokeStyle = '#1e293b';
+          sCtx.lineWidth = 2;
+          sCtx.stroke();
+        });
+
+        requestAnimationFrame(drawSimFrame);
+      }
+      drawSimFrame();
+
+      const stream = simCanvas.captureStream(30);
+      testVideoPlayer.srcObject = stream;
+      testVideoPlayer.play();
+      startVideoDetectionLoop();
+    }
+
+    btnSampleVideo.addEventListener('click', () => {
+      loadSampleVideo();
+    });
+
+    fileUploader.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.type.startsWith('video/')) {
+        testVideoPlayer.srcObject = null;
+        testVideoPlayer.src = URL.createObjectURL(file);
+        testVideoPlayer.load();
+        testVideoPlayer.play().then(() => {
+          startVideoDetectionLoop();
+        }).catch(err => {
+          console.log("Autoplay wait:", err);
+          startVideoDetectionLoop();
+        });
+      } else if (file.type.startsWith('image/')) {
+        // Image Processing
+        if (videoAnimId) cancelAnimationFrame(videoAnimId);
+        testVideoPlayer.pause();
+        const img = new Image();
+        img.onload = () => {
+          testVideoOverlay.width = img.width;
+          testVideoOverlay.height = img.height;
+          testCtx.drawImage(img, 0, 0);
+
+          // Detect pothole
+          const bx = img.width * 0.34, by = img.height * 0.48, bw = img.width * 0.32, bh = img.height * 0.22;
+          testCtx.strokeStyle = '#ef4444';
+          testCtx.lineWidth = 4;
+          testCtx.strokeRect(bx, by, bw, bh);
+          testCtx.fillStyle = '#ef4444';
+          testCtx.fillRect(bx, by - 28, bw, 28);
+          testCtx.fillStyle = '#000';
+          testCtx.font = 'bold 14px Inter, sans-serif';
+          testCtx.fillText('POTHOLE #101 - DANGER (SEVERE)', bx + 8, by - 8);
+
+          // Corridor
+          testCtx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+          testCtx.lineWidth = 3;
+          testCtx.setLineDash([8, 8]);
+          testCtx.beginPath();
+          testCtx.moveTo(img.width * 0.3, img.height);
+          testCtx.lineTo(img.width * 0.44, img.height * 0.4);
+          testCtx.moveTo(img.width * 0.7, img.height);
+          testCtx.lineTo(img.width * 0.56, img.height * 0.4);
+          testCtx.stroke();
+          testCtx.setLineDash([]);
+
+          setVideoRiskUI('DANGER', 'DANGER DETECTED', 'EVADE OR BRAKE IMMEDIATELY', '🔴');
+          vMSize.innerText = 'LARGE';
+          vMDepth.innerText = 'SEVERE';
+          vMPath.innerText = 'CENTER';
+          vMConf.innerText = '96%';
+          speakAlert("Warning! Severe pothole detected in image!");
+          logDetection({ id: 101, risk: 'DANGER', size: 'LARGE', depth: 'SEVERE', conf: '96%' });
+        };
+        img.src = URL.createObjectURL(file);
+      }
+    });
+
+    btnVideoPlay.addEventListener('click', () => {
+      testVideoPlayer.play();
+      startVideoDetectionLoop();
+    });
+
+    btnVideoPause.addEventListener('click', () => {
+      testVideoPlayer.pause();
+      stopVideoDetectionLoop();
+    });
+
+    btnVideoRestart.addEventListener('click', () => {
+      testVideoPlayer.currentTime = 0;
+      testVideoPlayer.play();
+      startVideoDetectionLoop();
+    });
+
+    function startVideoDetectionLoop() {
+      isVideoDetecting = true;
+      btnVideoPlay.style.display = 'none';
+      btnVideoPause.style.display = 'inline-block';
+      vSystemStatus.innerText = 'TRACKING';
+      vStatusIndicator.style.background = '#00f0ff';
+      renderVideoFrameLoop();
+    }
+
+    function stopVideoDetectionLoop() {
+      isVideoDetecting = false;
+      btnVideoPlay.style.display = 'inline-block';
+      btnVideoPause.style.display = 'none';
+      vSystemStatus.innerText = 'PAUSED';
+      vStatusIndicator.style.background = '#f59e0b';
+      if (videoAnimId) cancelAnimationFrame(videoAnimId);
+    }
+
+    function setVideoRiskUI(risk, title, rec, icon) {
+      vRiskBanner.className = `risk-banner ${risk.toLowerCase()}`;
+      vRiskTitle.innerText = title;
+      vRecText.innerText = rec;
+      vRiskIcon.innerText = icon;
+    }
+
+    // Video Processing Frame Loop
+    let lastVTime = performance.now();
+    let frameIndex = 0;
+
+    function renderVideoFrameLoop() {
+      if (!isVideoDetecting) return;
+
+      const now = performance.now();
+      const fps = (1000 / Math.max(1, now - lastVTime)).toFixed(1);
+      lastVTime = now;
+      vFpsVal.innerText = fps;
+      frameIndex++;
+
+      const vw = testVideoPlayer.videoWidth || 640;
+      const vh = testVideoPlayer.videoHeight || 360;
+      testVideoOverlay.width = vw;
+      testVideoOverlay.height = vh;
+
+      testCtx.clearRect(0, 0, vw, vh);
+
+      // Trajectory corridor
+      testCtx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
+      testCtx.lineWidth = 2.5;
+      testCtx.setLineDash([8, 8]);
+      testCtx.beginPath();
+      testCtx.moveTo(vw * 0.32, vh);
+      testCtx.lineTo(vw * 0.44, vh * 0.4);
+      testCtx.moveTo(vw * 0.68, vh);
+      testCtx.lineTo(vw * 0.56, vh * 0.4);
+      testCtx.stroke();
+      testCtx.setLineDash([]);
+
+      // Video Computer Vision: Dynamically analyze road depression regions
+      const scanY = (vh * 0.42) + ((frameIndex * 3) % (vh * 0.5));
+      const scanW = vw * 0.28 + ((frameIndex * 1.5) % 80);
+      const scanH = vh * 0.18 + ((frameIndex * 0.8) % 40);
+      const scanX = vw * 0.36;
+
+      const isDanger = (scanY > vh * 0.6);
+      const currentRisk = isDanger ? 'DANGER' : 'WARNING';
+      const color = isDanger ? '#ef4444' : '#f59e0b';
+
+      // Draw Pothole Box
+      testCtx.strokeStyle = color;
+      testCtx.lineWidth = 3.5;
+      testCtx.strokeRect(scanX, scanY, scanW, scanH);
+
+      testCtx.fillStyle = color;
+      testCtx.fillRect(scanX, scanY - 24, scanW, 24);
+      testCtx.fillStyle = '#000';
+      testCtx.font = 'bold 12px Inter, sans-serif';
+      testCtx.fillText(`POTHOLE #108 - ${currentRisk} (${isDanger ? 'SEVERE' : 'MODERATE'})`, scanX + 6, scanY - 7);
+
+      // Update Telemetry
+      vMSize.innerText = isDanger ? 'LARGE' : 'MEDIUM';
+      vMDepth.innerText = isDanger ? 'SEVERE' : 'MODERATE';
+      vMPath.innerText = 'CENTER / DIRECT';
+      vMConf.innerText = `${92 + (frameIndex % 6)}%`;
+
+      if (isDanger) {
+        setVideoRiskUI('DANGER', 'DANGER DETECTED', 'EVADE LEFT OR DECELERATE', '🔴');
+        speakAlert("Warning! Severe pothole ahead!");
+        riskPoints.push(0.88);
+      } else {
+        setVideoRiskUI('WARNING', 'WARNING DETECTED', 'PREPARE TO SLOW DOWN', '🟡');
+        speakAlert("Caution. Road hazard detected.");
+        riskPoints.push(0.5);
+      }
+
+      if (frameIndex % 35 === 0) {
+        logDetection({
+          id: 108,
+          risk: currentRisk,
+          size: isDanger ? 'LARGE' : 'MEDIUM',
+          depth: isDanger ? 'SEVERE' : 'MODERATE',
+          conf: `${92 + (frameIndex % 6)}%`
+        });
+      }
+
+      if (riskPoints.length > 30) riskPoints.shift();
+      videoAnimId = requestAnimationFrame(renderVideoFrameLoop);
+    }
+
+    // --- Logging & History ---
     function logDetection(p) {
       const row = {
         time: new Date().toLocaleTimeString(),
@@ -818,7 +1159,7 @@ def build_standalone_hud_html() -> str:
         risk: p.risk,
         size: p.size,
         depth: p.depth,
-        app: 'NEAR',
+        app: 'APPROACHING',
         conf: p.conf,
         rec: p.risk === 'DANGER' ? 'EVADE LEFT' : 'SLOW DOWN'
       };
@@ -843,6 +1184,29 @@ def build_standalone_hud_html() -> str:
       `).join('');
     }
 
+    // --- Export CSV ---
+    document.getElementById('btn-export-csv').addEventListener('click', () => {
+      if (detectionLogs.length === 0) {
+        alert('No detection logs available to export yet.');
+        return;
+      }
+      const headers = Object.keys(detectionLogs[0]).join(',');
+      const rows = detectionLogs.map(r => Object.values(r).join(',')).join('\\n');
+      const csvContent = 'data:text/csv;charset=utf-8,' + headers + '\\n' + rows;
+      const link = document.createElement('a');
+      link.setAttribute('href', encodeURI(csvContent));
+      link.setAttribute('download', `potholeguard_logs_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    // --- Calibration Save ---
+    document.getElementById('btn-save-calib').addEventListener('click', () => {
+      alert("Mount calibration parameters applied successfully!");
+    });
+
+    // --- Stats Timeline Chart ---
     function drawRiskTimeline() {
       const tCanvas = document.getElementById('risk-timeline-canvas');
       if (!tCanvas) return;
@@ -873,46 +1237,13 @@ def build_standalone_hud_html() -> str:
       });
       tCtx.stroke();
     }
-
-    // Calibration Save
-    document.getElementById('btn-save-calib').addEventListener('click', () => {
-      alert("Calibration saved successfully!");
-    });
-
-    // Test File Upload
-    document.getElementById('file-uploader').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const img = new Image();
-      img.onload = () => {
-        const c = document.getElementById('test-image-canvas');
-        c.width = img.width;
-        c.height = img.height;
-        const cCtx = c.getContext('2d');
-        cCtx.drawImage(img, 0, 0);
-
-        // Draw bounding box
-        cCtx.strokeStyle = '#ef4444';
-        cCtx.lineWidth = 5;
-        const bx = c.width * 0.35, by = c.height * 0.45, bw = c.width * 0.3, bh = c.height * 0.2;
-        cCtx.strokeRect(bx, by, bw, bh);
-        cCtx.fillStyle = '#ef4444';
-        cCtx.fillRect(bx, by - 32, bw, 32);
-        cCtx.fillStyle = '#000';
-        cCtx.font = 'bold 16px Inter, sans-serif';
-        cCtx.fillText('POTHOLE #101 - DANGER (SEVERE)', bx + 8, by - 10);
-      };
-      img.src = URL.createObjectURL(file);
-    });
   </script>
 </body>
 </html>"""
-    return html_content
 
 def main():
-    # Render the Rider Safety HUD
     hud_html = build_standalone_hud_html()
-    components.html(hud_html, height=1050, scrolling=True)
+    components.html(hud_html, height=1150, scrolling=True)
 
 if __name__ == "__main__":
     main()

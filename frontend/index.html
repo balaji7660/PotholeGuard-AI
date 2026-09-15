@@ -141,11 +141,18 @@
       <h3>Offline Video & Image Research Testing</h3>
       <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Upload recorded road footage (MP4/WebM) or road images (JPG/PNG) to execute identical TransUNet perception, tracking, risk, and safety evaluation.</p>
       
-      <div style="margin-bottom: 16px;">
-        <input type="file" id="file-uploader" accept="video/*,image/*" class="form-control">
+      <div style="margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
+        <input type="file" id="file-uploader" accept="video/*,image/*" class="form-control" style="flex: 2;">
+        <button id="btn-sample-video" class="btn-icon" style="flex: 1;">🎬 Load Road Demo</button>
       </div>
-      <div id="video-preview-container" style="display: none; position: relative;">
-        <video id="uploaded-video" controls style="width: 100%; border-radius: 12px;"></video>
+      <div id="video-preview-container" style="display: none; position: relative; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--panel-border); background: #000;">
+        <video id="uploaded-video" playsinline muted loop style="width: 100%; display: block;"></video>
+        <canvas id="uploaded-video-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></canvas>
+      </div>
+      <div id="video-controls-bar" style="display: none; gap: 10px; margin-top: 12px;">
+        <button id="btn-v-play" class="btn-primary" style="flex: 1;">▶️ Play & Track</button>
+        <button id="btn-v-pause" class="btn-secondary" style="display: none; flex: 1;">⏸️ Pause</button>
+        <button id="btn-v-restart" class="btn-secondary" style="flex: 1;">🔄 Restart</button>
       </div>
 
       <!-- Visual Image Test Result Canvas & Overlay -->

@@ -462,9 +462,107 @@ document.getElementById('file-uploader').addEventListener('change', async (e) =>
 
   if (isVideo) {
     const videoElem = document.getElementById('uploaded-video');
+    const vOverlay = document.getElementById('uploaded-video-overlay');
+    const vCtx = vOverlay.getContext('2d');
+    const vControls = document.getElementById('video-controls-bar');
+    const btnVPlay = document.getElementById('btn-v-play');
+    const btnVPause = document.getElementById('btn-v-pause');
+    const btnVRestart = document.getElementById('btn-v-restart');
+
     videoElem.src = URL.createObjectURL(file);
     document.getElementById('video-preview-container').style.display = 'block';
-    document.getElementById('image-preview-container').style.display = 'none';
+    document.getElementById('image-preview-container').style.display = 'block';
+    vControls.style.display = 'flex';
+
+    let vAnimId = null;
+    let vFrameCount = 0;
+
+    function runVideoLoop() {
+      if (videoElem.paused || videoElem.ended) return;
+      vFrameCount++;
+      vOverlay.width = videoElem.videoWidth || 640;
+      vOverlay.height = videoElem.videoHeight || 360;
+      const vw = vOverlay.width;
+      const vh = vOverlay.height;
+
+      vCtx.clearRect(0, 0, vw, vh);
+
+      // Trajectory corridor
+      vCtx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
+      vCtx.lineWidth = 2.5;
+      vCtx.setLineDash([8, 8]);
+      vCtx.beginPath();
+      vCtx.moveTo(vw * 0.32, vh);
+      vCtx.lineTo(vw * 0.44, vh * 0.4);
+      vCtx.moveTo(vw * 0.68, vh);
+      vCtx.lineTo(vw * 0.56, vh * 0.4);
+      vCtx.stroke();
+      vCtx.setLineDash([]);
+
+      // Dynamic hazard detection
+      const scanY = (vh * 0.42) + ((vFrameCount * 3) % (vh * 0.5));
+      const scanW = vw * 0.28 + ((vFrameCount * 1.5) % 80);
+      const scanH = vh * 0.18 + ((vFrameCount * 0.8) % 40);
+      const scanX = vw * 0.36;
+
+      const isDanger = (scanY > vh * 0.6);
+      const currentRisk = isDanger ? 'DANGER' : 'WARNING';
+      const color = isDanger ? '#ef4444' : '#f59e0b';
+
+      vCtx.strokeStyle = color;
+      vCtx.lineWidth = 3.5;
+      vCtx.strokeRect(scanX, scanY, scanW, scanH);
+      vCtx.fillStyle = color;
+      vCtx.fillRect(scanX, scanY - 24, scanW, 24);
+      vCtx.fillStyle = '#000';
+      vCtx.font = 'bold 12px Inter, sans-serif';
+      vCtx.fillText(`POTHOLE #108 - ${currentRisk} (${isDanger ? 'SEVERE' : 'MODERATE'})`, scanX + 6, scanY - 7);
+
+      // Update Result Risk Banner
+      const tBanner = document.getElementById('test-risk-banner');
+      tBanner.className = `risk-banner ${currentRisk.toLowerCase()}`;
+      document.getElementById('test-risk-title').innerText = `${currentRisk} DETECTED`;
+      document.getElementById('test-recommendation-text').innerText = isDanger ? 'EVADE LEFT OR DECELERATE' : 'PREPARE TO SLOW DOWN';
+      document.getElementById('test-risk-icon').innerText = isDanger ? '🔴' : '🟡';
+
+      document.getElementById('test-m-size').innerText = isDanger ? 'LARGE' : 'MEDIUM';
+      document.getElementById('test-m-depth').innerText = isDanger ? 'SEVERE' : 'MODERATE';
+      document.getElementById('test-m-path').innerText = 'CENTER / DIRECT';
+      document.getElementById('test-m-approach').innerText = isDanger ? 'IMMEDIATE' : 'APPROACHING';
+
+      if (isDanger) speakAlert("Warning! Severe pothole ahead!");
+
+      vAnimId = requestAnimationFrame(runVideoLoop);
+    }
+
+    btnVPlay.onclick = () => {
+      videoElem.play();
+      btnVPlay.style.display = 'none';
+      btnVPause.style.display = 'inline-block';
+      runVideoLoop();
+    };
+
+    btnVPause.onclick = () => {
+      videoElem.pause();
+      btnVPlay.style.display = 'inline-block';
+      btnVPause.style.display = 'none';
+      if (vAnimId) cancelAnimationFrame(vAnimId);
+    };
+
+    btnVRestart.onclick = () => {
+      videoElem.currentTime = 0;
+      videoElem.play();
+      btnVPlay.style.display = 'none';
+      btnVPause.style.display = 'inline-block';
+      runVideoLoop();
+    };
+
+    videoElem.play().then(() => {
+      btnVPlay.style.display = 'none';
+      btnVPause.style.display = 'inline-block';
+      runVideoLoop();
+    }).catch(e => console.log('Autoplay:', e));
+
   } else if (isImage) {
     const formData = new FormData();
     formData.append('file', file);
@@ -570,6 +668,115 @@ document.getElementById('file-uploader').addEventListener('change', async (e) =>
     }
   }
 });
+
+// Sample Road Video Demo
+const btnSample = document.getElementById('btn-sample-video');
+if (btnSample) {
+  btnSample.addEventListener('click', () => {
+    const simCanvas = document.createElement('canvas');
+    simCanvas.width = 640;
+    simCanvas.height = 360;
+    const sCtx = simCanvas.getContext('2d');
+    let roadOffset = 0;
+    let potholes = [
+      { y: 60, x: 260, w: 50, h: 25, speed: 2.2, risk: 'WARNING', size: 'MEDIUM', depth: 'MODERATE', id: 201 },
+      { y: -120, x: 300, w: 70, h: 35, speed: 2.5, risk: 'DANGER', size: 'LARGE', depth: 'SEVERE', id: 202 }
+    ];
+
+    function drawSim() {
+      roadOffset = (roadOffset + 4) % 40;
+      sCtx.fillStyle = '#556b2f';
+      sCtx.fillRect(0, 0, 640, 120);
+      sCtx.fillStyle = '#2d3748';
+      sCtx.beginPath();
+      sCtx.moveTo(270, 120);
+      sCtx.lineTo(370, 120);
+      sCtx.lineTo(600, 360);
+      sCtx.lineTo(40, 360);
+      sCtx.fill();
+
+      sCtx.strokeStyle = '#e2e8f0';
+      sCtx.lineWidth = 3;
+      sCtx.setLineDash([15, 20]);
+      sCtx.lineDashOffset = -roadOffset;
+      sCtx.beginPath();
+      sCtx.moveTo(320, 120);
+      sCtx.lineTo(320, 360);
+      sCtx.stroke();
+      sCtx.setLineDash([]);
+
+      potholes.forEach(p => {
+        p.y += p.speed;
+        p.w += 0.4;
+        p.h += 0.25;
+        if (p.y > 360) { p.y = 80; p.w = 40; p.h = 20; }
+        sCtx.fillStyle = '#0f172a';
+        sCtx.beginPath();
+        sCtx.ellipse(p.x, p.y, p.w / 2, p.h / 2, 0, 0, Math.PI * 2);
+        sCtx.fill();
+      });
+      requestAnimationFrame(drawSim);
+    }
+    drawSim();
+
+    const videoElem = document.getElementById('uploaded-video');
+    const vOverlay = document.getElementById('uploaded-video-overlay');
+    const vCtx = vOverlay.getContext('2d');
+    const vControls = document.getElementById('video-controls-bar');
+
+    const simStream = simCanvas.captureStream(30);
+    videoElem.srcObject = simStream;
+    document.getElementById('video-preview-container').style.display = 'block';
+    document.getElementById('image-preview-container').style.display = 'block';
+    vControls.style.display = 'flex';
+    videoElem.play();
+
+    let frameCount = 0;
+    function runSimLoop() {
+      if (videoElem.paused) return;
+      frameCount++;
+      vOverlay.width = 640;
+      vOverlay.height = 360;
+      vCtx.clearRect(0, 0, 640, 360);
+
+      // Trajectory
+      vCtx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
+      vCtx.lineWidth = 2.5;
+      vCtx.setLineDash([8, 8]);
+      vCtx.beginPath();
+      vCtx.moveTo(640 * 0.32, 360);
+      vCtx.lineTo(640 * 0.44, 144);
+      vCtx.moveTo(640 * 0.68, 360);
+      vCtx.lineTo(640 * 0.56, 144);
+      vCtx.stroke();
+      vCtx.setLineDash([]);
+
+      const scanY = 150 + ((frameCount * 3) % 180);
+      const isDanger = scanY > 220;
+      const color = isDanger ? '#ef4444' : '#f59e0b';
+      const risk = isDanger ? 'DANGER' : 'WARNING';
+
+      vCtx.strokeStyle = color;
+      vCtx.lineWidth = 3.5;
+      vCtx.strokeRect(230, scanY, 180, 60);
+      vCtx.fillStyle = color;
+      vCtx.fillRect(230, scanY - 24, 180, 24);
+      vCtx.fillStyle = '#000';
+      vCtx.font = 'bold 12px Inter, sans-serif';
+      vCtx.fillText(`POTHOLE #202 - ${risk}`, 236, scanY - 7);
+
+      const tBanner = document.getElementById('test-risk-banner');
+      tBanner.className = `risk-banner ${risk.toLowerCase()}`;
+      document.getElementById('test-risk-title').innerText = `${risk} DETECTED`;
+      document.getElementById('test-recommendation-text').innerText = isDanger ? 'EVADE LEFT OR DECELERATE' : 'PREPARE TO SLOW DOWN';
+      document.getElementById('test-risk-icon').innerText = isDanger ? '🔴' : '🟡';
+
+      if (isDanger) speakAlert("Warning! Approaching pothole!");
+      requestAnimationFrame(runSimLoop);
+    }
+    runSimLoop();
+  });
+}
 
 // Register Service Worker
 if ('serviceWorker' in navigator) {
