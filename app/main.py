@@ -341,39 +341,40 @@ if live_camera_active:
 
             # Run full inference pipeline on live frame
             res = pipeline.run(frame)
-                
-                t_curr = time.time()
-                fps = 1.0 / max(1e-4, t_curr - t_prev)
-                t_prev = t_curr
-                
-                # Build overlaid frame
-                H, W = frame.shape[:2]
-                annotated = frame.copy()
-                seg = cv2.resize(res.segmentation, (W, H))
-                mask = (seg >= 0.5)
-                annotated[mask] = (annotated[mask] * 0.45 + np.array([40, 40, 220]) * 0.55).astype(np.uint8)
-                
-                # Contours
-                contours, _ = cv2.findContours((seg >= 0.5).astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                for cnt in contours:
-                    if cv2.contourArea(cnt) > 80:
-                        x, y, w, h = cv2.boundingRect(cnt)
-                        cv2.rectangle(annotated, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                        cv2.putText(annotated, "POTHOLE", (x, max(18, y - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-                
-                # Convert to RGB for Streamlit
-                annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
-                
-                # Dynamic action banner text
-                act_name = ACTION_NAMES.get(res.final_action, "Maintain Lane")
-                sev_val = float(res.state_vector[6]) if len(res.state_vector) > 6 else 0.0
-                
-                live_placeholder.image(annotated_rgb, channels="RGB", use_container_width=True)
-                status_text.markdown(
-                    f"**Action:** `{act_name.upper()}` | **Potholes:** `{res.n_potholes}` | **Severity:** `{sev_val:.2f}` | **FPS:** `{fps:.1f}` | **Latency:** `{res.inference_ms:.1f}ms`"
-                )
-                time.sleep(0.03) # ~30 FPS loop
-        finally:
+            
+            t_curr = time.time()
+            fps = 1.0 / max(1e-4, t_curr - t_prev)
+            t_prev = t_curr
+            
+            # Build overlaid frame
+            H, W = frame.shape[:2]
+            annotated = frame.copy()
+            seg = cv2.resize(res.segmentation, (W, H))
+            mask = (seg >= 0.5)
+            annotated[mask] = (annotated[mask] * 0.45 + np.array([40, 40, 220]) * 0.55).astype(np.uint8)
+            
+            # Contours
+            contours, _ = cv2.findContours((seg >= 0.5).astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            for cnt in contours:
+                if cv2.contourArea(cnt) > 80:
+                    x, y, w, h = cv2.boundingRect(cnt)
+                    cv2.rectangle(annotated, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                    cv2.putText(annotated, "POTHOLE", (x, max(18, y - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+            
+            # Convert to RGB for Streamlit
+            annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+            
+            # Dynamic action banner text
+            act_name = ACTION_NAMES.get(res.final_action, "Maintain Lane")
+            sev_val = float(res.state_vector[6]) if len(res.state_vector) > 6 else 0.0
+            
+            live_placeholder.image(annotated_rgb, channels="RGB", use_container_width=True)
+            status_text.markdown(
+                f"**Action:** `{act_name.upper()}` | **Potholes:** `{res.n_potholes}` | **Severity:** `{sev_val:.2f}` | **FPS:** `{fps:.1f}` | **Latency:** `{res.inference_ms:.1f}ms`"
+            )
+            time.sleep(0.03) # ~30 FPS loop
+    finally:
+        if cap is not None:
             cap.release()
 
 # ── Preview image ───────────────────────────────────────────────────────────────
