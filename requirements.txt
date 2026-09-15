@@ -50,3 +50,12 @@ pytest-cov>=5.0.0
 
 # Type stubs
 types-PyYAML>=6.0.12
+
+# Real-Time Mobile & Web Application
+streamlit>=1.32.0
+fastapi>=0.110.0
+uvicorn>=0.28.0
+websockets>=12.0
+cryptography>=42.0.0
+qrcode>=8.0
+

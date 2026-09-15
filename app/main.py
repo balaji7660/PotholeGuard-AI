@@ -185,7 +185,7 @@ with st.sidebar:
 
     input_mode = st.radio(
         "Input Source",
-        ["📂 Upload Image", "🎬 Upload Video", "🖼️ Demo Images"],
+        ["📂 Upload Image", "🎬 Upload Video", "🖼️ Demo Images", "📷 Live Camera"],
         index=2,
     )
 
@@ -204,6 +204,13 @@ with st.sidebar:
         st.info("Upload a pothole video — frames are processed sequentially.")
         uploaded_file = st.file_uploader("Upload video", type=["mp4", "avi", "mov"])
         st.caption("Video mode: use Run Full Pipeline below after upload.")
+
+    elif input_mode == "📷 Live Camera":
+        camera_img = st.camera_input("Take a photo of the road / pothole")
+        if camera_img:
+            file_bytes = np.frombuffer(camera_img.read(), np.uint8)
+            image_bgr  = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+        st.info("💡 For continuous real-time video streaming & HUD on mobile, run: `python run_mobile.py`")
 
     else:  # Demo Images
         demo_names = list_demo_images()

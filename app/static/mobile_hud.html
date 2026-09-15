@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>PotholeGuard-AI | Mobile HUD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #07090e;
+      --panel-bg: rgba(13, 17, 23, 0.78);
+      --panel-border: rgba(56, 189, 248, 0.2);
+      --neon-blue: #38bdf8;
+      --neon-green: #22c55e;
+      --neon-yellow: #eab308;
+      --neon-red: #ef4444;
+      --neon-purple: #a855f7;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      height: 100vh;
+      height: 100dvh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Video & Overlay Viewport */
+    #viewport-container {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #camera-video {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    #ar-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    #heatmap-img {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      z-index: 9;
+      display: none;
+      background: #000;
+    }
+
+    /* Top HUD Action Bar */
+    .hud-header {
+      position: absolute;
+      top: env(safe-area-inset-top, 12px);
+      left: 12px;
+      right: 12px;
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .action-banner {
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      transition: all 0.25s ease;
+    }
+
+    .action-banner.action-maintain {
+      border-color: rgba(56, 189, 248, 0.5);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+    }
+    .action-banner.action-left, .action-banner.action-right {
+      border-color: rgba(34, 197, 94, 0.6);
+      box-shadow: 0 0 25px rgba(34, 197, 94, 0.35);
+    }
+    .action-banner.action-brake {
+      border-color: rgba(239, 68, 68, 0.8);
+      background: rgba(35, 10, 10, 0.85);
+      box-shadow: 0 0 35px rgba(239, 68, 68, 0.6);
+      animation: strobe 0.8s infinite alternate;
+    }
+
+    @keyframes strobe {
+      from { border-color: rgba(239, 68, 68, 0.4); }
+      to { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 45px rgba(239, 68, 68, 0.9); }
+    }
+
+    .action-direction {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .action-icon {
+      font-size: 1.8rem;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .action-text-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .action-sub {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .action-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #fff;
+    }
+
+    .srl-pill {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--neon-blue);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      text-transform: uppercase;
+    }
+    .srl-pill.override {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--neon-red);
+      border-color: var(--neon-red);
+    }
+
+    /* Top Telemetry Strip */
+    .telemetry-row {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .tel-card {
+      flex: 1;
+      background: rgba(10, 14, 23, 0.8);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 6px 10px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tel-label {
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .tel-value {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .sev-low { color: var(--neon-green); }
+    .sev-medium { color: var(--neon-yellow); }
+    .sev-high { color: var(--neon-red); }
+
+    /* Bottom Control Bar */
+    .hud-footer {
+      position: absolute;
+      bottom: env(safe-area-inset-bottom, 14px);
+      left: 12px;
+      right: 12px;
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Mode Pill Selector */
+    .mode-selector {
+      display: flex;
+      background: rgba(10, 14, 23, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 7px 4px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .mode-btn.active {
+      background: var(--neon-blue);
+      color: #000;
+      font-weight: 700;
+      box-shadow: 0 2px 10px rgba(56, 189, 248, 0.4);
+    }
+
+    /* Action Buttons Row */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .btn-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      cursor: pointer;
+      transition: transform 0.1s, background 0.2s;
+    }
+    .btn-icon:active {
+      transform: scale(0.92);
+      background: rgba(56, 189, 248, 0.2);
+    }
+    .btn-icon.active {
+      background: var(--neon-blue);
+      color: #000;
+      border-color: var(--neon-blue);
+    }
+
+    .btn-primary {
+      flex: 1;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.3);
+      transition: transform 0.1s, filter 0.2s;
+    }
+    .btn-primary:active { transform: scale(0.96); }
+    .btn-primary.running {
+      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+      border-color: rgba(239, 68, 68, 0.5);
+      box-shadow: 0 4px 16px rgba(220, 38, 38, 0.3);
+    }
+
+    /* Start / Permission Overlay */
+    #start-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(7, 9, 14, 0.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .splash-logo {
+      font-size: 3.2rem;
+      margin-bottom: 12px;
+      animation: float 2.5s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .splash-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 6px;
+      letter-spacing: 0.05em;
+    }
+
+    .splash-desc {
+      color: var(--text-muted);
+      font-size: 0.84rem;
+      line-height: 1.4;
+      max-width: 320px;
+      margin-bottom: 24px;
+    }
+
+    .btn-launch {
+      width: 100%;
+      max-width: 280px;
+      height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+      border: none;
+      color: #031320;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(56, 189, 248, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    /* Hidden file input for photo upload */
+    #file-input { display: none; }
+
+    /* Crosshair HUD graphics */
+    .hud-crosshair {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 140px;
+      height: 140px;
+      border: 1px dashed rgba(56, 189, 248, 0.25);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 15;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hud-crosshair::before {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 1px;
+      background: rgba(56, 189, 248, 0.6);
+    }
+    .hud-crosshair::after {
+      content: '';
+      position: absolute;
+      width: 1px;
+      height: 14px;
+      background: rgba(56, 189, 248, 0.6);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Start & Permissions Overlay -->
+  <div id="start-overlay">
+    <div class="splash-logo">🚗</div>
+    <h1 class="splash-title">POTHOLEGUARD-AI</h1>
+    <p class="splash-desc">Real-Time Mobile HUD for Autonomous Pothole Perception & Safety Decision System</p>
+    <button class="btn-launch" id="btn-start-camera">
+      <span>START REAL-TIME HUD</span>
+    </button>
+    <p style="margin-top: 18px; font-size: 0.72rem; color: #64748b;">Requires Camera & Audio permission for live AR & Voice Alerts</p>
+  </div>
+
+  <!-- Video Viewport -->
+  <div id="viewport-container">
+    <video id="camera-video" playsinline autoplay muted></video>
+    <canvas id="ar-canvas"></canvas>
+    <img id="heatmap-img" alt="Perception Heatmap" />
+    <div class="hud-crosshair"></div>
+  </div>
+
+  <!-- Top HUD Action Banner -->
+  <div class="hud-header">
+    <div class="action-banner action-maintain" id="action-banner">
+      <div class="action-direction">
+        <div class="action-icon" id="action-icon">⬆️</div>
+        <div class="action-text-group">
+          <span class="action-sub" id="action-sub">RL POLICY DECISION</span>
+          <span class="action-title" id="action-title">MAINTAIN LANE</span>
+        </div>
+      </div>
+      <div class="srl-pill" id="srl-pill">SRL ACTIVE</div>
+    </div>
+
+    <!-- Telemetry Row -->
+    <div class="telemetry-row">
+      <div class="tel-card">
+        <span class="tel-label">SEVERITY</span>
+        <span class="tel-value sev-low" id="tel-severity">0.00 (LOW)</span>
+      </div>
+      <div class="tel-card">
+        <span class="tel-label">POTHOLES</span>
+        <span class="tel-value" id="tel-potholes">0 DETECTED</span>
+      </div>
+      <div class="tel-card">
+        <span class="tel-label">LATENCY / FPS</span>
+        <span class="tel-value" id="tel-fps">-- ms | -- FPS</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom HUD Controls -->
+  <div class="hud-footer">
+    <!-- View Modes -->
+    <div class="mode-selector">
+      <button class="mode-btn active" data-mode="ar">🎥 AR CAM</button>
+      <button class="mode-btn" data-mode="depth">🌌 DEPTH</button>
+      <button class="mode-btn" data-mode="uncertainty">🔥 UNCERTAIN</button>
+      <button class="mode-btn" data-mode="road">🛣️ ROAD SIM</button>
+    </div>
+
+    <!-- Controls Row -->
+    <div class="controls-row">
+      <!-- Mute/Audio Button -->
+      <button class="btn-icon active" id="btn-audio" title="Toggle Voice Alerts">🔊</button>
+      
+      <!-- Flip Camera -->
+      <button class="btn-icon" id="btn-flip" title="Flip Camera">🔄</button>
+
+      <!-- Main Action: Pause / Resume Stream -->
+      <button class="btn-primary" id="btn-stream-toggle">
+        <span id="btn-stream-text">⚡ PAUSE STREAM</span>
+      </button>
+
+      <!-- Torch / Flashlight (if supported) -->
+      <button class="btn-icon" id="btn-torch" title="Toggle Torch">💡</button>
+
+      <!-- Photo Picker fallback -->
+      <button class="btn-icon" id="btn-upload" title="Test Photo">📁</button>
+    </div>
+  </div>
+
+  <input type="file" id="file-input" accept="image/*">
+
+  <script>
+    // State management
+    let videoStream = null;
+    let videoTrack = null;
+    let websocket = null;
+    let isStreaming = false;
+    let currentFacingMode = 'environment';
+    let currentMode = 'ar';
+    let voiceEnabled = true;
+    let torchEnabled = false;
+    let prevAction = null;
+    let lastVoiceTime = 0;
+    
+    // Performance & FPS tracking
+    let frameCount = 0;
+    let lastFpsTime = performance.now();
+    let currentFps = 0;
+    let captureCanvas = document.createElement('canvas');
+    let captureCtx = captureCanvas.getContext('2d', { willReadFrequently: true });
+    
+    // DOM Elements
+    const video = document.getElementById('camera-video');
+    const arCanvas = document.getElementById('ar-canvas');
+    const arCtx = arCanvas.getContext('2d');
+    const heatmapImg = document.getElementById('heatmap-img');
+    const startOverlay = document.getElementById('start-overlay');
+    const actionBanner = document.getElementById('action-banner');
+    const actionIcon = document.getElementById('action-icon');
+    const actionSub = document.getElementById('action-sub');
+    const actionTitle = document.getElementById('action-title');
+    const srlPill = document.getElementById('srl-pill');
+    const telSeverity = document.getElementById('tel-severity');
+    const telPotholes = document.getElementById('tel-potholes');
+    const telFps = document.getElementById('tel-fps');
+    const btnAudio = document.getElementById('btn-audio');
+    const btnFlip = document.getElementById('btn-flip');
+    const btnTorch = document.getElementById('btn-torch');
+    const btnStreamToggle = document.getElementById('btn-stream-toggle');
+    const btnStreamText = document.getElementById('btn-stream-text');
+    const fileInput = document.getElementById('file-input');
+
+    // Resize AR Canvas to match display size
+    function resizeCanvas() {
+      arCanvas.width = window.innerWidth;
+      arCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Initialize Camera Stream
+    async function startCamera(facing = 'environment') {
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+      }
+
+      const constraints = {
+        audio: false,
+        video: {
+          facingMode: { ideal: facing },
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          frameRate: { ideal: 24, max: 30 }
+        }
+      };
+
+      try {
+        videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = videoStream;
+        videoTrack = videoStream.getVideoTracks()[0];
+        currentFacingMode = facing;
+        await video.play();
+        return true;
+      } catch (err) {
+        console.warn("Could not start environment camera, falling back to default:", err);
+        try {
+          videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          video.srcObject = videoStream;
+          videoTrack = videoStream.getVideoTracks()[0];
+          await video.play();
+          return true;
+        } catch (err2) {
+          alert("Camera access denied or unavailable: " + err2.message);
+          return false;
+        }
+      }
+    }
+
+    // Connect WebSocket
+    function connectWebSocket() {
+      const loc = window.location;
+      const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${loc.host}/ws/stream`;
+
+      websocket = new WebSocket(wsUrl);
+
+      websocket.onopen = () => {
+        console.log("WebSocket connected to AI inference backend.");
+        if (isStreaming) {
+          requestNextFrame();
+        }
+      };
+
+      websocket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleInferenceResult(data);
+        } catch (e) {
+          console.error("Error parsing WS frame:", e);
+        }
+
+        if (isStreaming) {
+          setTimeout(requestNextFrame, 35); // Target ~25-28 FPS
+        }
+      };
+
+      websocket.onerror = (err) => {
+        console.warn("WebSocket error:", err);
+      };
+
+      websocket.onclose = () => {
+        console.log("WebSocket disconnected. Reconnecting in 1.5s...");
+        setTimeout(connectWebSocket, 1500);
+      };
+    }
+
+    // Capture & Send Frame
+    function requestNextFrame() {
+      if (!isStreaming || !websocket || websocket.readyState !== WebSocket.OPEN) return;
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        setTimeout(requestNextFrame, 100);
+        return;
+      }
+
+      // Downsample for rapid network transmission (~384x288 or 512x384)
+      const targetW = 448;
+      const targetH = Math.round(video.videoHeight * (targetW / video.videoWidth));
+      captureCanvas.width = targetW;
+      captureCanvas.height = targetH;
+      captureCtx.drawImage(video, 0, 0, targetW, targetH);
+
+      const b64 = captureCanvas.toDataURL('image/jpeg', 0.65);
+      const needMaps = (currentMode !== 'ar');
+
+      websocket.send(JSON.stringify({
+        cmd: 'frame',
+        image: b64,
+        include_maps: needMaps,
+        frame_id: ++frameCount
+      }));
+    }
+
+    // Speak Voice Warning using Web Speech Synthesis
+    function speakAlert(text) {
+      if (!voiceEnabled || !('speechSynthesis' in window)) return;
+      const now = Date.now();
+      // Throttle speech alerts to avoid overlapping talk
+      if (now - lastVoiceTime < 2400) return;
+      lastVoiceTime = now;
+
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Trigger Mobile Device Vibration
+    function triggerHaptic(type) {
+      if (!('vibrate' in navigator)) return;
+      if (type === 'brake') {
+        navigator.vibrate([200, 80, 200, 80, 300]);
+      } else if (type === 'hazard') {
+        navigator.vibrate([120, 60, 120]);
+      }
+    }
+
+    // Handle Inference Results & Update HUD
+    function handleInferenceResult(data) {
+      if (data.status !== 'success') return;
+
+      // 1. Calculate FPS & Latency
+      const now = performance.now();
+      if (now - lastFpsTime >= 1000) {
+        currentFps = Math.round((frameCount * 1000) / (now - lastFpsTime));
+        lastFpsTime = now;
+        frameCount = 0;
+      }
+      telFps.textContent = `${data.inference_ms} ms | ${currentFps > 0 ? currentFps : '--'} FPS`;
+
+      // 2. Update Action Banner
+      const action = data.action;
+      const isOverride = data.srl_override;
+      const isBrake = data.override_reason && data.override_reason.includes('EMERGENCY');
+
+      actionBanner.className = 'action-banner';
+      if (isBrake) {
+        actionBanner.classList.add('action-brake');
+        actionIcon.textContent = '🛑';
+        actionTitle.textContent = 'EMERGENCY BRAKE';
+        actionSub.textContent = 'CRITICAL HAZARD INTERVENTION';
+        srlPill.className = 'srl-pill override';
+        srlPill.textContent = 'EMERGENCY';
+        triggerHaptic('brake');
+      } else if (action === 1) { // Shift Left
+        actionBanner.classList.add('action-left');
+        actionIcon.textContent = '⬅️';
+        actionTitle.textContent = 'SHIFT LEFT';
+        actionSub.textContent = isOverride ? 'SRL SAFETY OVERRIDE' : 'RL POLICY AVOIDANCE';
+        srlPill.className = isOverride ? 'srl-pill override' : 'srl-pill';
+        srlPill.textContent = isOverride ? 'OVERRIDE' : 'ACTIVE';
+        if (isOverride) triggerHaptic('hazard');
+      } else if (action === 2) { // Shift Right
+        actionBanner.classList.add('action-right');
+        actionIcon.textContent = '➡️';
+        actionTitle.textContent = 'SHIFT RIGHT';
+        actionSub.textContent = isOverride ? 'SRL SAFETY OVERRIDE' : 'RL POLICY AVOIDANCE';
+        srlPill.className = isOverride ? 'srl-pill override' : 'srl-pill';
+        srlPill.textContent = isOverride ? 'OVERRIDE' : 'ACTIVE';
+        if (isOverride) triggerHaptic('hazard');
+      } else { // Maintain Lane
+        actionBanner.classList.add('action-maintain');
+        actionIcon.textContent = '⬆️';
+        actionTitle.textContent = 'MAINTAIN LANE';
+        actionSub.textContent = 'CLEAR TRAJECTORY';
+        srlPill.className = 'srl-pill';
+        srlPill.textContent = 'SAFE';
+      }
+
+      // 3. Voice Alerts
+      if (data.voice_alert) {
+        speakAlert(data.voice_alert);
+      }
+
+      // 4. Update Telemetry
+      telSeverity.textContent = `${data.severity.toFixed(2)} (${data.severity_level})`;
+      telSeverity.className = 'tel-value ' + (data.severity_level === 'HIGH' ? 'sev-high' : (data.severity_level === 'MEDIUM' ? 'sev-medium' : 'sev-low'));
+      telPotholes.textContent = `${data.n_potholes} DETECTED`;
+
+      // 5. Render AR Canvas / Heatmaps
+      renderAR(data);
+    }
+
+    // Render Augmented Reality Visuals
+    function renderAR(data) {
+      const W = arCanvas.width;
+      const H = arCanvas.height;
+      arCtx.clearRect(0, 0, W, H);
+
+      // Handle Heatmap modes
+      if (currentMode === 'depth' && data.depth_b64) {
+        heatmapImg.src = 'data:image/jpeg;base64,' + data.depth_b64;
+        heatmapImg.style.display = 'block';
+        return;
+      } else if (currentMode === 'uncertainty' && data.uncertainty_b64) {
+        heatmapImg.src = 'data:image/jpeg;base64,' + data.uncertainty_b64;
+        heatmapImg.style.display = 'block';
+        return;
+      } else if (currentMode === 'road' && data.road_sim_b64) {
+        heatmapImg.src = 'data:image/jpeg;base64,' + data.road_sim_b64;
+        heatmapImg.style.display = 'block';
+        return;
+      } else {
+        heatmapImg.style.display = 'none';
+      }
+
+      // Draw Pothole Contours & Hazards in AR Mode
+      if (data.potholes && data.potholes.length > 0) {
+        data.potholes.forEach((pothole, idx) => {
+          const poly = pothole.polygon;
+          if (!poly || poly.length < 3) return;
+
+          // Draw filled translucent red polygon
+          arCtx.beginPath();
+          arCtx.moveTo(poly[0][0] * W, poly[0][1] * H);
+          for (let i = 1; i < poly.length; i++) {
+            arCtx.lineTo(poly[i][0] * W, poly[i][1] * H);
+          }
+          arCtx.closePath();
+
+          arCtx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+          arCtx.fill();
+          arCtx.lineWidth = 3;
+          arCtx.strokeStyle = '#ef4444';
+          arCtx.stroke();
+
+          // Draw Bounding Box with hazard label
+          const box = pothole.box;
+          const bx = box.x * W;
+          const by = box.y * H;
+          const bw = box.w * W;
+          const bh = box.h * H;
+
+          arCtx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+          arCtx.lineWidth = 1.5;
+          arCtx.strokeRect(bx, by, bw, bh);
+
+          // Hazard tag
+          arCtx.fillStyle = '#ef4444';
+          arCtx.fillRect(bx, Math.max(0, by - 20), 92, 18);
+          arCtx.fillStyle = '#ffffff';
+          arCtx.font = 'bold 10px Orbitron, sans-serif';
+          arCtx.fillText(`POTHOLE #${idx+1}`, bx + 4, Math.max(14, by - 7));
+        });
+      }
+
+      // Draw Futuristic HUD Road Lane Guides & Trajectory Arc
+      drawTrajectoryHUD(W, H, data.action);
+    }
+
+    function drawTrajectoryHUD(W, H, action) {
+      // Perspective lane bounds
+      const bottomCenter = W / 2;
+      const bottomY = H;
+      const horizonY = H * 0.48;
+
+      let targetX = W * 0.5;
+      if (action === 1) targetX = W * 0.28; // Left
+      if (action === 2) targetX = W * 0.72; // Right
+
+      // Draw dynamic green/blue guidance curve
+      arCtx.beginPath();
+      arCtx.moveTo(bottomCenter, bottomY);
+      arCtx.quadraticCurveTo(bottomCenter, H * 0.7, targetX, horizonY);
+      arCtx.lineWidth = 4;
+      arCtx.strokeStyle = (action === 0) ? 'rgba(56, 189, 248, 0.7)' : 'rgba(34, 197, 94, 0.85)';
+      arCtx.setLineDash([8, 6]);
+      arCtx.stroke();
+      arCtx.setLineDash([]);
+    }
+
+    // Toggle Torch / Flashlight
+    async function toggleTorch() {
+      if (!videoTrack) return;
+      try {
+        const capabilities = videoTrack.getCapabilities();
+        if (capabilities.torch) {
+          torchEnabled = !torchEnabled;
+          await videoTrack.applyConstraints({
+            advanced: [{ torch: torchEnabled }]
+          });
+          btnTorch.classList.toggle('active', torchEnabled);
+        } else {
+          alert("Torch/Flashlight not supported on this camera.");
+        }
+      } catch (err) {
+        console.warn("Torch error:", err);
+      }
+    }
+
+    // Event Listeners
+    document.getElementById('btn-start-camera').addEventListener('click', async () => {
+      startOverlay.style.display = 'none';
+      const ok = await startCamera('environment');
+      if (ok) {
+        isStreaming = true;
+        connectWebSocket();
+      }
+    });
+
+    btnStreamToggle.addEventListener('click', () => {
+      isStreaming = !isStreaming;
+      if (isStreaming) {
+        btnStreamToggle.classList.remove('running');
+        btnStreamText.textContent = '⚡ PAUSE STREAM';
+        requestNextFrame();
+      } else {
+        btnStreamToggle.classList.add('running');
+        btnStreamText.textContent = '▶️ RESUME STREAM';
+      }
+    });
+
+    btnAudio.addEventListener('click', () => {
+      voiceEnabled = !voiceEnabled;
+      btnAudio.classList.toggle('active', voiceEnabled);
+      btnAudio.textContent = voiceEnabled ? '🔊' : '🔇';
+    });
+
+    btnFlip.addEventListener('click', async () => {
+      const nextFacing = (currentFacingMode === 'environment') ? 'user' : 'environment';
+      await startCamera(nextFacing);
+    });
+
+    btnTorch.addEventListener('click', toggleTorch);
+
+    // View Mode Selectors
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.getAttribute('data-mode');
+      });
+    });
+
+    // Upload Photo Fallback
+    document.getElementById('btn-upload').addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const b64 = evt.target.result;
+        try {
+          const res = await fetch('/api/detect_frame', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              image_b64: b64,
+              include_maps: true
+            })
+          });
+          const data = await res.json();
+          handleInferenceResult(data);
+        } catch (err) {
+          alert("Error analyzing image: " + err.message);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  </script>
+</body>
+</html>

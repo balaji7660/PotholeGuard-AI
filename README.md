@@ -80,7 +80,24 @@ pip install -r requirements.txt
 
 ---
 
-## 🚀 Running the Application
+## 📱 Real-Time Mobile Testing & HUD
+
+Test the pothole avoidance AI in real time on your smartphone (Android / iOS):
+
+```bash
+python run_mobile.py
+```
+
+1. Ensure your smartphone and PC are connected to the same Wi-Fi or Mobile Hotspot.
+2. Scan the **QR code** printed in the terminal with your phone.
+3. Open the link in Chrome or Safari and tap **"START REAL-TIME HUD"**.
+4. Point your camera at roads, dashcam videos, or pothole photos for instant AR overlays, dynamic steering action arrows, voice audio alerts, and vibration feedback!
+
+See [MOBILE_TESTING_GUIDE.md](MOBILE_TESTING_GUIDE.md) for full details.
+
+---
+
+## 🚀 Running the Streamlit Desktop Dashboard
 
 ```bash
 streamlit run app/main.py
@@ -92,10 +109,9 @@ Then open: http://localhost:8501
 
 ### Quick start:
 1. Open the app
-2. Select "Demo Images" in the sidebar
-3. Choose any demo image
-4. Click **"Run Full Pipeline"**
-5. View segmentation, depth, uncertainty, UASA state, RL decisions, SRL verdict, and vehicle trajectory
+2. Select "Demo Images" or "📷 Live Camera" in the sidebar
+3. Click **"Run Full Pipeline"**
+4. View segmentation, depth, uncertainty, UASA state, RL decisions, SRL verdict, and vehicle trajectory
 
 ---
 
